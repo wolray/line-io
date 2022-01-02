@@ -6,7 +6,7 @@
 
     <groupId>com.github.wolray</groupId>
     <artifactId>line-io</artifactId>
-    <version>1.1.1</version>
+    <version>1.1.2</version>
     <build>
         <plugins>
             <plugin>
@@ -21,11 +21,6 @@
     </build>
 
     <dependencies>
-        <dependency>
-            <groupId>com.alibaba</groupId>
-            <artifactId>fastjson</artifactId>
-            <version>1.2.79</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>

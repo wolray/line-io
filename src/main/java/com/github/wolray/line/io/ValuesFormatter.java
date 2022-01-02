@@ -7,7 +7,7 @@ import java.util.function.Function;
 /**
  * @author ray
  */
-public class ValuesFormatter<T> extends ValuesBase implements Function<T, String> {
+public class ValuesFormatter<T> extends ValuesBase<T> implements Function<T, String> {
     private final String sep;
 
     public ValuesFormatter(Class<T> type, String sep) {

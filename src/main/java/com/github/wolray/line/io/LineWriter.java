@@ -1,7 +1,5 @@
 package com.github.wolray.line.io;
 
-import com.alibaba.fastjson.JSON;
-
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -17,12 +15,8 @@ public class LineWriter<T> {
     private boolean markCsvAsUTF8;
     private boolean append;
 
-    LineWriter(Function<T, String> formatter) {
+    public LineWriter(Function<T, String> formatter) {
         this.formatter = formatter;
-    }
-
-    public static <T> LineWriter<T> simple(Function<T, String> function) {
-        return new LineWriter<>(function);
     }
 
     public static <T> LineWriter<T> byCsv(String sep, Class<T> type, boolean withHeader) {
@@ -41,10 +35,6 @@ public class LineWriter<T> {
             res.header(String.join(sep, columns));
         }
         return res;
-    }
-
-    public static <T> LineWriter<T> byJson() {
-        return new LineWriter<>(JSON::toJSONString);
     }
 
     public LineWriter<T> header(String header) {

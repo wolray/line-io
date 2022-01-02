@@ -10,11 +10,11 @@ import java.util.stream.Stream;
 /**
  * @author ray
  */
-class ValuesBase {
-    final Class<?> type;
+class ValuesBase<T> {
+    protected final Class<T> type;
     final FieldContext[] fieldContexts;
 
-    ValuesBase(Class<?> type) {
+    ValuesBase(Class<T> type) {
         this.type = type;
         Stream<FieldContext> stream = Arrays.stream(type.getFields())
             .filter(f -> !isStatic(f) && !Modifier.isFinal(f.getModifiers()))

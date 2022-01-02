@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 /**
  * @author ray
  */
-public class ValuesConverter<V, T> extends ValuesBase implements Function<V, T> {
+public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, T> {
     private final ToIntFunction<V> sizeGetter;
     private final Constructor<T> constructor;
     private BiConsumer<T, V> filler;

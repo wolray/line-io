@@ -15,40 +15,46 @@ import java.util.stream.Stream;
  * @author ray
  */
 public class DataStream<T> {
-    private Supplier<Stream<T>> streamSupplier;
+    private final Class<T> type;
+    private Supplier<Stream<T>> supplier;
 
-    DataStream(Supplier<Stream<T>> streamSupplier) {
-        this.streamSupplier = streamSupplier;
+    DataStream(Class<T> type, Supplier<Stream<T>> supplier) {
+        this.type = type;
+        this.supplier = supplier;
     }
 
     public DataStream<T> limit(int maxSize) {
-        streamSupplier = () -> streamSupplier.get().limit(maxSize);
+        Supplier<Stream<T>> old = supplier;
+        supplier = () -> old.get().limit(maxSize);
         return this;
     }
 
     public DataStream<T> peek(Consumer<T> action) {
-        streamSupplier = () -> streamSupplier.get().peek(action);
+        Supplier<Stream<T>> old = supplier;
+        supplier = () -> old.get().peek(action);
         return this;
     }
 
     public DataStream<T> filter(Predicate<T> predicate) {
-        streamSupplier = () -> streamSupplier.get().filter(predicate);
+        Supplier<Stream<T>> old = supplier;
+        supplier = () -> old.get().filter(predicate);
         return this;
     }
 
-    private Stream<T> get() {
-        return streamSupplier.get();
-    }
-
     public void forEach(Consumer<T> action) {
-        get().forEach(action);
+        supplier.get().forEach(action);
     }
 
     public List<T> toList() {
-        return get().collect(Collectors.toCollection(LinkedList::new));
+        return supplier.get().collect(Collectors.toCollection(LinkedList::new));
+    }
+
+    public List<T> toListWithCsvCache(String sep, String file) {
+        LineCache<T> cache = new LineCache<>(sep, type);
+        return cache.get(file, this::toList);
     }
 
     public <K, V> Map<K, V> groupBy(Function<T, K> keyMapper, Collector<T, ?, V> collector) {
-        return get().collect(Collectors.groupingBy(keyMapper, collector));
+        return supplier.get().collect(Collectors.groupingBy(keyMapper, collector));
     }
 }
