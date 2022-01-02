@@ -25,7 +25,7 @@ public class LineCache<T> {
             return reader.read(is).toList();
         }
         List<T> res = supplier.get();
-        writer.write(res, file);
+        writer.writeAsync(res, file);
         return res;
     }
 }

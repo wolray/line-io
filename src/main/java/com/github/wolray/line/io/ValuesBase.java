@@ -11,7 +11,7 @@ import java.util.stream.Stream;
  * @author ray
  */
 class ValuesBase<T> {
-    protected final Class<T> type;
+    final Class<T> type;
     final FieldContext[] fieldContexts;
 
     ValuesBase(Class<T> type) {

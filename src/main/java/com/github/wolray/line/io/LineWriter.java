@@ -4,6 +4,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 /**
@@ -50,6 +51,10 @@ public class LineWriter<T> {
     public LineWriter<T> appendToFile() {
         append = true;
         return this;
+    }
+
+    public void writeAsync(Iterable<T> iterable, String file) {
+        CompletableFuture.runAsync(() -> write(iterable, file));
     }
 
     public void write(Iterable<T> iterable, String file) {
