@@ -32,8 +32,7 @@ public class LineReader<S, V, T> {
     }
 
     public static <T> Csv<T> byCsv(String sep, Class<T> type) {
-        ValuesConverter.Text<T> converter = new ValuesConverter.Text<>(type);
-        return new Csv<>(converter, sep);
+        return new Csv<>(new ValuesConverter.Text<>(type), sep);
     }
 
     public static <T> Excel<T> byExcel(Class<T> type) {
@@ -41,8 +40,7 @@ public class LineReader<S, V, T> {
     }
 
     public static <T> Excel<T> byExcel(int sheetIndex, Class<T> type) {
-        ValuesConverter.Excel<T> converter = new ValuesConverter.Excel<>(type);
-        return new Excel<>(sheetIndex, converter);
+        return new Excel<>(sheetIndex, new ValuesConverter.Excel<>(type));
     }
 
     public static InputStream toInputStream(String file) {
@@ -62,11 +60,13 @@ public class LineReader<S, V, T> {
     }
 
     public final DataStream<T> read(S source, int skipLines, Columns columns) {
-        Stream<V> stream = toStream(source).skip(skipLines);
-        if (columns != null && columns.slots.length > 0) {
-            reorder(columns.slots);
-        }
-        return new DataStream<>(stream.map(function));
+        return new DataStream<>(() -> {
+            Stream<V> stream = toStream(source).skip(skipLines);
+            if (columns != null && columns.slots.length > 0) {
+                reorder(columns.slots);
+            }
+            return stream.map(function);
+        });
     }
 
     protected Stream<V> toStream(S source) {
@@ -115,9 +115,11 @@ public class LineReader<S, V, T> {
         }
 
         public final DataStream<T> read(InputStream is, int skipLines, String... header) {
-            Stream<String> stream = toStream(is).skip(skipLines);
-            return new DataStream<>(StreamHelper.consumeFirst(stream,
-                s -> setHeader(s, header), function));
+            return new DataStream<>(() -> {
+                Stream<String> stream = toStream(is).skip(skipLines);
+                return StreamHelper.consumeFirst(stream,
+                    s -> setHeader(s, header), function);
+            });
         }
     }
 

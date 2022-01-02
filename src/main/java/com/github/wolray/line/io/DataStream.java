@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -14,37 +15,40 @@ import java.util.stream.Stream;
  * @author ray
  */
 public class DataStream<T> {
-    private Stream<T> stream;
+    private Supplier<Stream<T>> streamSupplier;
 
-    DataStream(Stream<T> stream) {
-        this.stream = stream;
+    DataStream(Supplier<Stream<T>> streamSupplier) {
+        this.streamSupplier = streamSupplier;
     }
 
     public DataStream<T> limit(int maxSize) {
-        stream = stream.limit(maxSize);
+        streamSupplier = () -> streamSupplier.get().limit(maxSize);
         return this;
     }
 
     public DataStream<T> peek(Consumer<T> action) {
-        stream = stream.peek(action);
+        streamSupplier = () -> streamSupplier.get().peek(action);
         return this;
     }
 
     public DataStream<T> filter(Predicate<T> predicate) {
-        stream = stream.filter(predicate);
+        streamSupplier = () -> streamSupplier.get().filter(predicate);
         return this;
     }
 
+    private Stream<T> get() {
+        return streamSupplier.get();
+    }
+
     public void forEach(Consumer<T> action) {
-        stream.forEach(action);
+        get().forEach(action);
     }
 
     public List<T> toList() {
-        return stream.collect(Collectors.toCollection(LinkedList::new));
+        return get().collect(Collectors.toCollection(LinkedList::new));
     }
 
-    public <K, V> Map<K, V> groupBy(Function<T, K> keyMapper,
-        Collector<T, ?, V> collector) {
-        return stream.collect(Collectors.groupingBy(keyMapper, collector));
+    public <K, V> Map<K, V> groupBy(Function<T, K> keyMapper, Collector<T, ?, V> collector) {
+        return get().collect(Collectors.groupingBy(keyMapper, collector));
     }
 }

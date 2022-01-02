@@ -22,11 +22,11 @@ public class LineCache<T> {
         }
     }
 
-    public static <T> LineCache<T> csvCache(String sep, Class<T> type) {
+    public static <T> LineCache<T> byCsv(String sep, Class<T> type) {
         return new LineCache<>(Objects.requireNonNull(sep), type);
     }
 
-    public static <T> LineCache<T> jsonCache(Class<T> type) {
+    public static <T> LineCache<T> byJson(Class<T> type) {
         return new LineCache<>(null, type);
     }
 
