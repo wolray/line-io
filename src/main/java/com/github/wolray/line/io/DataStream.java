@@ -49,9 +49,9 @@ public class DataStream<T> {
         return supplier.get().collect(Collectors.toCollection(LinkedList::new));
     }
 
-    public List<T> toListWithCsvCache(String sep, String file) {
-        LineCache<T> cache = new LineCache<>(sep, type);
-        return cache.get(file, this::toList);
+    public List<T> toList(String cacheCsvSep, String cacheCsvFile) {
+        LineCache<T> cache = new LineCache<>(cacheCsvSep, type);
+        return cache.get(cacheCsvFile, this::toList);
     }
 
     public <K, V> Map<K, V> groupBy(Function<T, K> keyMapper, Collector<T, ?, V> collector) {
