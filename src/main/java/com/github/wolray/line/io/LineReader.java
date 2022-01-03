@@ -19,7 +19,7 @@ public class LineReader<S, V, T> {
     protected final Class<T> type;
     protected final Function<V, T> function;
 
-    private LineReader(Class<T> type, Function<V, T> function) {
+    protected LineReader(Class<T> type, Function<V, T> function) {
         this.type = type;
         this.function = function;
     }
