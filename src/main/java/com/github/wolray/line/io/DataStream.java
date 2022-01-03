@@ -49,8 +49,12 @@ public class DataStream<T> {
         return supplier.get().collect(Collectors.toCollection(LinkedList::new));
     }
 
-    public List<T> toList(String cacheCsvSep, String cacheCsvFile) {
-        LineCache<T> cache = new LineCache<>(cacheCsvSep, type);
+    public List<T> toList(String cacheCsvFile) {
+        return toList(cacheCsvFile, ",");
+    }
+
+    public List<T> toList(String cacheCsvFile, String sep) {
+        LineCache<T> cache = new LineCache<>(sep, type);
         return cache.get(cacheCsvFile, this::toList);
     }
 
