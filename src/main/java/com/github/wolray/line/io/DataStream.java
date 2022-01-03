@@ -3,10 +3,7 @@ package com.github.wolray.line.io;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.function.Supplier;
+import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -23,22 +20,22 @@ public class DataStream<T> {
         this.supplier = supplier;
     }
 
-    public DataStream<T> limit(int maxSize) {
+    private DataStream<T> mod(UnaryOperator<Stream<T>> op) {
         Supplier<Stream<T>> old = supplier;
-        supplier = () -> old.get().limit(maxSize);
+        supplier = () -> op.apply(old.get());
         return this;
+    }
+
+    public DataStream<T> limit(int maxSize) {
+        return mod(s -> s.limit(maxSize));
     }
 
     public DataStream<T> peek(Consumer<T> action) {
-        Supplier<Stream<T>> old = supplier;
-        supplier = () -> old.get().peek(action);
-        return this;
+        return mod(s -> s.peek(action));
     }
 
     public DataStream<T> filter(Predicate<T> predicate) {
-        Supplier<Stream<T>> old = supplier;
-        supplier = () -> old.get().filter(predicate);
-        return this;
+        return mod(s -> s.filter(predicate));
     }
 
     public void forEach(Consumer<T> action) {
