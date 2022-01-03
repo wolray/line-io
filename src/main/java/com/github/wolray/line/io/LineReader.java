@@ -19,9 +19,13 @@ public class LineReader<S, V, T> {
     protected final Class<T> type;
     protected final Function<V, T> function;
 
-    public LineReader(Class<T> type, Function<V, T> function) {
+    private LineReader(Class<T> type, Function<V, T> function) {
         this.type = type;
         this.function = function;
+    }
+
+    public static <T> Text<T> simple(Class<T> type, Function<String, T> parser) {
+        return new Text<>(type, parser);
     }
 
     public static <T> Csv<T> byCsv(String sep, Class<T> type) {
@@ -66,7 +70,9 @@ public class LineReader<S, V, T> {
         throw new UnsupportedOperationException();
     }
 
-    protected void reorder(int[] slots) {}
+    protected void reorder(int[] slots) {
+        throw new UnsupportedOperationException();
+    }
 
     public static class Text<T> extends LineReader<InputStream, String, T> {
         private Text(Class<T> type, Function<String, T> parser) {
