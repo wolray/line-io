@@ -1,8 +1,6 @@
 package com.github.wolray.line.io;
 
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -43,7 +41,7 @@ public class DataStream<T> {
     }
 
     public List<T> toList() {
-        return supplier.get().collect(Collectors.toCollection(LinkedList::new));
+        return supplier.get().collect(Collectors.toCollection(DataList::new));
     }
 
     public List<T> toList(String cacheCsvFile) {
@@ -57,5 +55,54 @@ public class DataStream<T> {
 
     public <K, V> Map<K, V> groupBy(Function<T, K> keyMapper, Collector<T, ?, V> collector) {
         return supplier.get().collect(Collectors.groupingBy(keyMapper, collector));
+    }
+    
+    public static class DataList<T> extends AbstractList<T> {
+        private final Node<T> dummy = new Node<>();
+        private Node<T> last = dummy;
+        private int size = 0;
+
+        @Override
+        public boolean add(T t) {
+            Node<T> node = new Node<>();
+            node.t = t;
+            last.next = node;
+            last = node;
+            size++;
+            return true;
+        }
+
+        @Override
+        public T get(int index) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int size() {
+            return size;
+        }
+
+        @Override
+        public Iterator<T> iterator() {
+            return new Iterator<T>() {
+                Node<T> node = dummy;
+
+                @Override
+                public boolean hasNext() {
+                    return node.next != null;
+                }
+
+                @Override
+                public T next() {
+                    node = node.next;
+                    return node.t;
+                }
+            };
+        }
+    }
+
+    private static class Node<T> {
+        T t;
+        Node<T> next;
     }
 }
