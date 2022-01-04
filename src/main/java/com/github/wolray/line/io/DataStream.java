@@ -12,17 +12,13 @@ import java.util.stream.Stream;
 public class DataStream<T> {
     private final Class<T> type;
     private Supplier<Stream<T>> supplier;
-    private List<T> ts;
 
     DataStream(Class<T> type, Supplier<Stream<T>> supplier) {
         this.type = type;
         this.supplier = supplier;
     }
 
-    private DataStream<T> mod(UnaryOperator<Stream<T>> op) {
-        if (ts != null) {
-            throw new IllegalStateException("cannot modify stream after caching");
-        }
+    DataStream<T> mod(UnaryOperator<Stream<T>> op) {
         Supplier<Stream<T>> old = supplier;
         supplier = () -> op.apply(old.get());
         return this;
@@ -40,30 +36,22 @@ public class DataStream<T> {
         return mod(s -> s.filter(predicate));
     }
 
-    public DataStream<T> cache(String csvFile) {
+    public DataStream.Cache<T> cache(String csvFile) {
         return cache(csvFile, ",");
     }
 
-    public DataStream<T> cache(String csvFile, String sep) {
+    public DataStream.Cache<T> cache(String csvFile, String sep) {
         LineCache<T> cache = new LineCache<>(sep, type);
-        ts = cache.get(csvFile, this::collect);
-        return this;
-    }
-
-    private List<T> collect() {
-        return supplier.get().collect(Collectors.toCollection(DataList::new));
+        List<T> ts = cache.get(csvFile, this::toList);
+        return new DataStream.Cache<>(ts);
     }
 
     public void forEach(Consumer<T> action) {
-        if (ts != null) {
-            ts.forEach(action);
-        } else {
-            supplier.get().forEach(action);
-        }
+        supplier.get().forEach(action);
     }
 
     public List<T> toList() {
-        return ts != null ? ts : collect();
+        return supplier.get().collect(Collectors.toCollection(DataList::new));
     }
 
     public List<T> toArrayList() {
@@ -85,8 +73,36 @@ public class DataStream<T> {
     }
 
     public <K, V> Map<K, V> groupBy(Function<T, K> keyMapper, Collector<T, ?, V> collector) {
-        Stream<T> stream = ts != null ? ts.stream() : supplier.get();
-        return stream.collect(Collectors.groupingBy(keyMapper, collector));
+        return supplier.get().collect(Collectors.groupingBy(keyMapper, collector));
+    }
+
+    public static class Cache<T> extends DataStream<T> {
+        private final List<T> ts;
+
+        private Cache(List<T> ts) {
+            super(null, ts::stream);
+            this.ts = ts;
+        }
+
+        @Override
+        DataStream<T> mod(UnaryOperator<Stream<T>> op) {
+            throw new IllegalStateException("cannot modify cached stream");
+        }
+
+        @Override
+        public Cache<T> cache(String csvFile, String sep) {
+            throw new IllegalStateException("stream is already cached");
+        }
+
+        @Override
+        public void forEach(Consumer<T> action) {
+            ts.forEach(action);
+        }
+
+        @Override
+        public List<T> toList() {
+            return ts;
+        }
     }
 
     public static class DataList<T> extends AbstractList<T> {
