@@ -1,6 +1,9 @@
 package com.github.wolray.line.io;
 
-import java.util.*;
+import java.util.AbstractList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 import java.util.function.*;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
@@ -56,7 +59,7 @@ public class DataStream<T> {
     public <K, V> Map<K, V> groupBy(Function<T, K> keyMapper, Collector<T, ?, V> collector) {
         return supplier.get().collect(Collectors.groupingBy(keyMapper, collector));
     }
-    
+
     public static class DataList<T> extends AbstractList<T> {
         private final Node<T> dummy = new Node<>();
         private Node<T> last = dummy;
