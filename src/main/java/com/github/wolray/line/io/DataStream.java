@@ -60,6 +60,16 @@ public class DataStream<T> {
         return this;
     }
 
+    public DataStream<T> cacheWith(Cache<T> cache) {
+        if (cache.exists()) {
+            return cache.getReader().get();
+        } else {
+            collect();
+            cache.getWriter().accept(ts);
+            return this;
+        }
+    }
+
     private DataStream<T> cacheFile(String file, String suffix,
         Supplier<LineReader.Text<T>> reader, Supplier<LineWriter<T>> writer) {
         String f = file.endsWith(suffix) ? file : (file + suffix);
@@ -80,16 +90,6 @@ public class DataStream<T> {
                 return ts -> writer.get().writeAsync(ts, f);
             }
         });
-    }
-
-    public DataStream<T> cacheWith(Cache<T> cache) {
-        if (cache.exists()) {
-            return cache.getReader().get();
-        } else {
-            collect();
-            cache.getWriter().accept(ts);
-            return this;
-        }
     }
 
     public DataStream<T> cacheCsv(String file, Class<T> type) {
