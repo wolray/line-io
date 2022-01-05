@@ -7,9 +7,6 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
-import java.util.Arrays;
-import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
@@ -31,8 +28,8 @@ public class LineReader<S, V, T> {
         return new Text<>(s -> JSON.parseObject(s, type));
     }
 
-    public static <T> Csv<T> byCsv(String sep, Class<T> type) {
-        return new Csv<>(new ValuesConverter.Text<>(type), sep);
+    public static <T> CsvReader<T> byCsv(String sep, Class<T> type) {
+        return new CsvReader<>(new ValuesConverter.Text<>(type), sep);
     }
 
     public static <T> Excel<T> byExcel(Class<T> type) {
@@ -51,22 +48,12 @@ public class LineReader<S, V, T> {
         }
     }
 
-    public final DataStream<T> read(S source) {
-        return read(source, 0, null);
+    public Session read(S source) {
+        return read(source, 0);
     }
 
-    public final DataStream<T> read(S source, int skipLines) {
-        return read(source, skipLines, null);
-    }
-
-    public final DataStream<T> read(S source, int skipLines, Columns columns) {
-        return new DataStream<>(() -> {
-            Stream<V> stream = toStream(source).skip(skipLines);
-            if (columns != null && columns.slots.length > 0) {
-                reorder(columns.slots);
-            }
-            return stream.map(function);
-        });
+    public Session read(S source, int skipLines) {
+        return new Session(source, skipLines);
     }
 
     protected Stream<V> toStream(S source) {
@@ -78,50 +65,13 @@ public class LineReader<S, V, T> {
     }
 
     public static class Text<T> extends LineReader<InputStream, String, T> {
-        private Text(Function<String, T> parser) {
+        Text(Function<String, T> parser) {
             super(parser);
         }
 
         @Override
         protected Stream<String> toStream(InputStream source) {
             return new BufferedReader(new InputStreamReader(source)).lines();
-        }
-    }
-
-    public static class Csv<T> extends Text<T> {
-        private final ValuesConverter.Text<T> converter;
-        private final String sep;
-
-        private Csv(ValuesConverter.Text<T> converter, String sep) {
-            super(converter.compose(s -> s.split(sep)));
-            this.converter = converter;
-            this.sep = sep;
-        }
-
-        @Override
-        protected void reorder(int[] slots) {
-            converter.resetOrder(slots);
-        }
-
-        private void setHeader(String s, String[] header) {
-            List<String> list = Arrays.asList(s.split(sep));
-            int[] slots = Arrays.stream(header)
-                .mapToInt(list::indexOf)
-                .toArray();
-            for (int i = 0; i < slots.length; i++) {
-                if (slots[i] < 0) {
-                    throw new NoSuchElementException(header[i]);
-                }
-            }
-            reorder(slots);
-        }
-
-        public final DataStream<T> read(InputStream is, int skipLines, String... header) {
-            return new DataStream<>(() -> {
-                Stream<String> stream = toStream(is).skip(skipLines);
-                return StreamHelper.consumeFirst(stream,
-                    s -> setHeader(s, header), function);
-            });
         }
     }
 
@@ -147,6 +97,53 @@ public class LineReader<S, V, T> {
         @Override
         protected void reorder(int[] slots) {
             ((ValuesConverter.Excel<T>)function).resetOrder(slots);
+        }
+    }
+
+    public class Session {
+        private final S source;
+        private final int skipLines;
+        private int[] slots;
+
+        protected Session(S source, int skipLines) {
+            this.source = source;
+            this.skipLines = skipLines;
+        }
+
+        public Session columns(int... slots) {
+            this.slots = slots;
+            return this;
+        }
+
+        public Session columns(String excelCols) {
+            if (excelCols == null || excelCols.isEmpty()) {
+                slots = new int[0];
+            } else {
+                String[] split = excelCols.split(",");
+                slots = new int[split.length];
+                char a = 'A';
+                for (int i = 0; i < split.length; i++) {
+                    String col = split[i].trim();
+                    int j = col.charAt(0) - a;
+                    if (col.length() > 1) {
+                        slots[i] = (j + 1) * 26 + col.charAt(1) - a;
+                    } else {
+                        slots[i] = j;
+                    }
+                }
+            }
+            return this;
+        }
+
+        protected Stream<T> map(Stream<V> stream) {
+            if (slots != null && slots.length > 0) {
+                reorder(slots);
+            }
+            return stream.map(function);
+        }
+
+        public DataStream<T> stream() {
+            return new DataStream<>(() -> map(toStream(source).skip(skipLines)));
         }
     }
 }

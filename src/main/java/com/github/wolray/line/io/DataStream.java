@@ -77,8 +77,7 @@ public class DataStream<T> {
         if (cache.exists()) {
             return cache.getReader().get();
         } else {
-            reuse();
-            cache.getWriter().accept(ts);
+            cache.getWriter().accept(toList());
             return this;
         }
     }
@@ -95,7 +94,7 @@ public class DataStream<T> {
 
             @Override
             public Supplier<DataStream<T>> getReader() {
-                return () -> reader.get().read(is);
+                return reader.get().read(is)::stream;
             }
 
             @Override
