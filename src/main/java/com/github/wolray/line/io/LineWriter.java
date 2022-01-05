@@ -1,6 +1,11 @@
 package com.github.wolray.line.io;
 
-import java.io.*;
+import com.alibaba.fastjson.JSON;
+
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -15,6 +20,10 @@ public class LineWriter<T> {
 
     public LineWriter(Function<T, String> formatter) {
         this.formatter = formatter;
+    }
+
+    public static <T> LineWriter<T> byJson() {
+        return new LineWriter<>(JSON::toJSONString);
     }
 
     public static <T> LineWriter<T> byCsv(String sep, Class<T> type, boolean withHeader) {

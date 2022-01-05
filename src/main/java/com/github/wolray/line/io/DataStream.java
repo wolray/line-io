@@ -11,25 +11,28 @@ import java.util.stream.Stream;
  * @author ray
  */
 public class DataStream<T> {
-    final Class<T> type;
-    Supplier<Stream<T>> supplier;
+    private List<T> ts;
+    private Supplier<Stream<T>> supplier;
 
-    DataStream(Class<T> type, Supplier<Stream<T>> supplier) {
-        this.type = type;
+    public DataStream(List<T> ts) {
+        this.ts = ts;
+        supplier = ts::stream;
+    }
+
+    public DataStream(Supplier<Stream<T>> supplier) {
         this.supplier = supplier;
     }
 
-    public static <T> DataStream<T> of(List<T> ts) {
-        return of(ts, null);
+    public boolean isCached() {
+        return ts != null;
     }
 
-    public static <T> DataStream<T> of(List<T> ts, Class<T> type) {
-        return new Cache<>(type, ts);
-    }
-
-    DataStream<T> mod(UnaryOperator<Stream<T>> op) {
-        Supplier<Stream<T>> old = supplier;
-        supplier = () -> op.apply(old.get());
+    private DataStream<T> mod(UnaryOperator<Stream<T>> op) {
+        Supplier<Stream<T>> old = supplier, next = () -> op.apply(old.get());
+        if (isCached()) {
+            return new DataStream<>(next);
+        }
+        supplier = next;
         return this;
     }
 
@@ -45,38 +48,60 @@ public class DataStream<T> {
         return mod(s -> s.filter(predicate));
     }
 
+    public <E> DataStream<E> map(Function<T, E> mapper) {
+        Supplier<Stream<T>> old = supplier;
+        return new DataStream<>(() -> old.get().map(mapper));
+    }
+
     public DataStream<T> cache() {
-        return new Cache<>(type, toList());
-    }
-
-    public DataStream<T> csvCache(String file) {
-        return csvCache(file, ",");
-    }
-
-    public DataStream<T> csvCache(String file, String sep) {
-        if (type == null) {
-            throw new IllegalStateException("unspecified type");
+        if (isCached()) {
+            return this;
         }
-        String suffix = ".csv";
+        return new DataStream<>(toList());
+    }
+
+    private DataStream<T> cacheFile(String file, String suffix,
+        Supplier<LineReader.Text<T>> reader, Supplier<LineWriter<T>> writer) {
         if (!file.endsWith(suffix)) {
             file = file + suffix;
         }
         InputStream is = LineReader.toInputStream(file);
-        LineReader.Csv<T> reader = LineReader.byCsv(sep, type);
         if (is != null) {
-            return reader.read(is);
+            return reader.get().read(is);
+        } else {
+            List<T> list = toList();
+            writer.get().writeAsync(list, file);
+            return new DataStream<>(list);
         }
-        List<T> list = toList();
-        LineWriter<T> writer = LineWriter.byCsv(sep, type);
-        writer.writeAsync(list, file);
-        return new Cache<>(type, list);
+    }
+
+    public DataStream<T> cacheCsv(String file, Class<T> type) {
+        return cacheCsv(file, type, ",");
+    }
+
+    public DataStream<T> cacheCsv(String file, Class<T> type, String sep) {
+        return cacheFile(file, ".csv",
+            () -> LineReader.byCsv(sep, type),
+            () -> LineWriter.byCsv(sep, type));
+    }
+
+    public DataStream<T> cacheJson(String file, Class<T> type) {
+        return cacheFile(file, ".txt",
+            () -> LineReader.byJson(type),
+            LineWriter::byJson);
     }
 
     public void forEach(Consumer<T> action) {
+        if (isCached()) {
+            ts.forEach(action);
+        }
         supplier.get().forEach(action);
     }
 
     public List<T> toList() {
+        if (isCached()) {
+            return ts;
+        }
         return supplier.get().collect(Collectors.toCollection(DataList::new));
     }
 
@@ -100,88 +125,5 @@ public class DataStream<T> {
 
     public <K, V> Map<K, V> groupBy(Function<T, K> keyMapper, Collector<T, ?, V> collector) {
         return supplier.get().collect(Collectors.groupingBy(keyMapper, collector));
-    }
-
-    public static class Cache<T> extends DataStream<T> {
-        private final List<T> ts;
-
-        private Cache(Class<T> type, List<T> ts) {
-            super(type, ts::stream);
-            this.ts = ts;
-        }
-
-        @Override
-        DataStream<T> mod(UnaryOperator<Stream<T>> op) {
-            return new DataStream<>(type, () -> op.apply(supplier.get()));
-        }
-
-        @Override
-        public DataStream<T> cache() {
-            return this;
-        }
-
-        @Override
-        public DataStream<T> csvCache(String file, String sep) {
-            throw new IllegalStateException("stream is already cached");
-        }
-
-        @Override
-        public void forEach(Consumer<T> action) {
-            ts.forEach(action);
-        }
-
-        @Override
-        public List<T> toList() {
-            return ts;
-        }
-    }
-
-    public static class DataList<T> extends AbstractList<T> {
-        private final Node<T> dummy = new Node<>();
-        private Node<T> last = dummy;
-        private int size = 0;
-
-        @Override
-        public boolean add(T t) {
-            Node<T> node = new Node<>();
-            node.t = t;
-            last.next = node;
-            last = node;
-            size++;
-            return true;
-        }
-
-        @Override
-        public T get(int index) {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public int size() {
-            return size;
-        }
-
-        @Override
-        public Iterator<T> iterator() {
-            return new Iterator<T>() {
-                Node<T> node = dummy;
-
-                @Override
-                public boolean hasNext() {
-                    return node.next != null;
-                }
-
-                @Override
-                public T next() {
-                    node = node.next;
-                    return node.t;
-                }
-            };
-        }
-    }
-
-    private static class Node<T> {
-        T t;
-        Node<T> next;
     }
 }
