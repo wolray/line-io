@@ -1,9 +1,6 @@
 package com.github.wolray.line.io;
 
-import java.io.BufferedWriter;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import java.io.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
@@ -13,7 +10,7 @@ import java.util.function.Function;
 public class LineWriter<T> {
     private final Function<T, String> formatter;
     private String header;
-    private boolean markCsvAsUTF8;
+    private boolean markCsvAsUtf8;
     private boolean append;
 
     public LineWriter(Function<T, String> formatter) {
@@ -43,8 +40,8 @@ public class LineWriter<T> {
         return this;
     }
 
-    public LineWriter<T> markCsvAsUTF8() {
-        markCsvAsUTF8 = true;
+    public LineWriter<T> markCsvAsUtf8() {
+        markCsvAsUtf8 = true;
         return this;
     }
 
@@ -60,7 +57,7 @@ public class LineWriter<T> {
     public void write(Iterable<T> iterable, String file) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, append))) {
             if (!append) {
-                if (markCsvAsUTF8 && file.endsWith(".csv")) {
+                if (markCsvAsUtf8 && file.endsWith(".csv")) {
                     bw.write('\ufeff');
                 }
                 if (header != null) {

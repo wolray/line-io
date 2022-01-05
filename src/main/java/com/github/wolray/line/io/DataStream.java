@@ -1,5 +1,6 @@
 package com.github.wolray.line.io;
 
+import java.io.InputStream;
 import java.util.*;
 import java.util.function.*;
 import java.util.stream.Collector;
@@ -10,27 +11,23 @@ import java.util.stream.Stream;
  * @author ray
  */
 public class DataStream<T> {
-    private final Class<T> type;
-    private Supplier<Stream<T>> supplier;
-    private List<T> ts;
+    final Class<T> type;
+    Supplier<Stream<T>> supplier;
 
     DataStream(Class<T> type, Supplier<Stream<T>> supplier) {
         this.type = type;
         this.supplier = supplier;
     }
 
-    private boolean isCached() {
-        return ts != null;
+    public static <T> DataStream<T> of(List<T> ts) {
+        return of(ts, null);
     }
 
-    private void checkCache() {
-        if (isCached()) {
-            throw new IllegalStateException("operation is not allowed for already cached stream");
-        }
+    public static <T> DataStream<T> of(List<T> ts, Class<T> type) {
+        return new Cache<>(type, ts);
     }
 
-    private DataStream<T> mod(UnaryOperator<Stream<T>> op) {
-        checkCache();
+    DataStream<T> mod(UnaryOperator<Stream<T>> op) {
         Supplier<Stream<T>> old = supplier;
         supplier = () -> op.apply(old.get());
         return this;
@@ -48,39 +45,38 @@ public class DataStream<T> {
         return mod(s -> s.filter(predicate));
     }
 
-    private DataStream<T> setCache(List<T> list) {
-        ts = list;
-        supplier = ts::stream;
-        return this;
-    }
-
     public DataStream<T> cache() {
-        checkCache();
-        return setCache(toList());
+        return new Cache<>(type, toList());
     }
 
-    public DataStream<T> cache(String csvFile) {
-        return cache(csvFile, ",");
+    public DataStream<T> csvCache(String file) {
+        return csvCache(file, ",");
     }
 
-    public DataStream<T> cache(String csvFile, String sep) {
-        checkCache();
-        LineCache<T> cache = new LineCache<>(sep, type);
-        return setCache(cache.get(csvFile, this::toList));
+    public DataStream<T> csvCache(String file, String sep) {
+        if (type == null) {
+            throw new IllegalStateException("unspecified type");
+        }
+        String suffix = ".csv";
+        if (!file.endsWith(suffix)) {
+            file = file + suffix;
+        }
+        InputStream is = LineReader.toInputStream(file);
+        LineReader.Csv<T> reader = LineReader.byCsv(sep, type);
+        if (is != null) {
+            return reader.read(is);
+        }
+        List<T> list = toList();
+        LineWriter<T> writer = LineWriter.byCsv(sep, type);
+        writer.writeAsync(list, file);
+        return new Cache<>(type, list);
     }
 
     public void forEach(Consumer<T> action) {
-        if (isCached()) {
-            ts.forEach(action);
-        } else {
-            supplier.get().forEach(action);
-        }
+        supplier.get().forEach(action);
     }
 
     public List<T> toList() {
-        if (isCached()) {
-            return ts;
-        }
         return supplier.get().collect(Collectors.toCollection(DataList::new));
     }
 
@@ -104,6 +100,40 @@ public class DataStream<T> {
 
     public <K, V> Map<K, V> groupBy(Function<T, K> keyMapper, Collector<T, ?, V> collector) {
         return supplier.get().collect(Collectors.groupingBy(keyMapper, collector));
+    }
+
+    public static class Cache<T> extends DataStream<T> {
+        private final List<T> ts;
+
+        private Cache(Class<T> type, List<T> ts) {
+            super(type, ts::stream);
+            this.ts = ts;
+        }
+
+        @Override
+        DataStream<T> mod(UnaryOperator<Stream<T>> op) {
+            return new DataStream<>(type, () -> op.apply(supplier.get()));
+        }
+
+        @Override
+        public DataStream<T> cache() {
+            return this;
+        }
+
+        @Override
+        public DataStream<T> csvCache(String file, String sep) {
+            throw new IllegalStateException("stream is already cached");
+        }
+
+        @Override
+        public void forEach(Consumer<T> action) {
+            ts.forEach(action);
+        }
+
+        @Override
+        public List<T> toList() {
+            return ts;
+        }
     }
 
     public static class DataList<T> extends AbstractList<T> {
