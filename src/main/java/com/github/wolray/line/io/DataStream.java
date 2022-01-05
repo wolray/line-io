@@ -65,6 +65,7 @@ public class DataStream<T> {
     public DataStream<T> collect() {
         if (!isCollected()) {
             ts = supplier.get().collect(Collectors.toCollection(DataList::new));
+            supplier = ts::stream;
         }
         return this;
     }
