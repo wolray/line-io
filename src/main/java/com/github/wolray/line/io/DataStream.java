@@ -23,13 +23,13 @@ public class DataStream<T> {
         this.supplier = supplier;
     }
 
-    public boolean isCached() {
+    public boolean isCollected() {
         return ts != null;
     }
 
     private DataStream<T> mod(UnaryOperator<Stream<T>> op) {
         Supplier<Stream<T>> old = supplier, next = () -> op.apply(old.get());
-        if (isCached()) {
+        if (isCollected()) {
             return new DataStream<>(next);
         }
         supplier = next;
@@ -53,8 +53,8 @@ public class DataStream<T> {
         return new DataStream<>(() -> old.get().map(mapper));
     }
 
-    public DataStream<T> cache() {
-        if (!isCached()) {
+    public DataStream<T> collect() {
+        if (!isCollected()) {
             ts = supplier.get().collect(Collectors.toCollection(DataList::new));
         }
         return this;
@@ -62,15 +62,32 @@ public class DataStream<T> {
 
     private DataStream<T> cacheFile(String file, String suffix,
         Supplier<LineReader.Text<T>> reader, Supplier<LineWriter<T>> writer) {
-        if (!file.endsWith(suffix)) {
-            file = file + suffix;
-        }
-        InputStream is = LineReader.toInputStream(file);
-        if (is != null) {
-            return reader.get().read(is);
+        String f = file.endsWith(suffix) ? file : (file + suffix);
+        InputStream is = LineReader.toInputStream(f);
+        return cacheWith(new Cache<T>() {
+            @Override
+            public boolean exists() {
+                return is != null;
+            }
+
+            @Override
+            public Supplier<DataStream<T>> getReader() {
+                return () -> reader.get().read(is);
+            }
+
+            @Override
+            public Consumer<List<T>> getWriter() {
+                return ts -> writer.get().writeAsync(ts, f);
+            }
+        });
+    }
+
+    public DataStream<T> cacheWith(Cache<T> cache) {
+        if (cache.exists()) {
+            return cache.getReader().get();
         } else {
-            cache();
-            writer.get().writeAsync(ts, file);
+            collect();
+            cache.getWriter().accept(ts);
             return this;
         }
     }
@@ -92,14 +109,14 @@ public class DataStream<T> {
     }
 
     public void forEach(Consumer<T> action) {
-        if (isCached()) {
+        if (isCollected()) {
             ts.forEach(action);
         }
         supplier.get().forEach(action);
     }
 
     public List<T> toList() {
-        cache();
+        collect();
         return ts;
     }
 
@@ -123,5 +140,13 @@ public class DataStream<T> {
 
     public <K, V> Map<K, V> groupBy(Function<T, K> keyMapper, Collector<T, ?, V> collector) {
         return supplier.get().collect(Collectors.groupingBy(keyMapper, collector));
+    }
+
+    public interface Cache<T> {
+        boolean exists();
+
+        Supplier<DataStream<T>> getReader();
+
+        Consumer<List<T>> getWriter();
     }
 }
