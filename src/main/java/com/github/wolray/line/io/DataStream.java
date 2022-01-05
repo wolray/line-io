@@ -14,13 +14,21 @@ public class DataStream<T> {
     private List<T> ts;
     private Supplier<Stream<T>> supplier;
 
-    public DataStream(List<T> ts) {
+    DataStream(List<T> ts) {
         this.ts = ts;
         supplier = ts::stream;
     }
 
-    public DataStream(Supplier<Stream<T>> supplier) {
+    DataStream(Supplier<Stream<T>> supplier) {
         this.supplier = supplier;
+    }
+
+    public static <T> DataStream<T> of(List<T> ts) {
+        return new DataStream<>(ts);
+    }
+
+    public static <T> DataStream<T> of(Supplier<Stream<T>> supplier) {
+        return new DataStream<>(supplier);
     }
 
     public boolean isCollected() {
@@ -31,9 +39,10 @@ public class DataStream<T> {
         Supplier<Stream<T>> old = supplier, next = () -> op.apply(old.get());
         if (isCollected()) {
             return new DataStream<>(next);
+        } else {
+            supplier = next;
+            return this;
         }
-        supplier = next;
-        return this;
     }
 
     public DataStream<T> limit(int maxSize) {
@@ -111,8 +120,9 @@ public class DataStream<T> {
     public void forEach(Consumer<T> action) {
         if (isCollected()) {
             ts.forEach(action);
+        } else {
+            supplier.get().forEach(action);
         }
-        supplier.get().forEach(action);
     }
 
     public List<T> toList() {
