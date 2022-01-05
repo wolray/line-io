@@ -15,8 +15,7 @@ public class DataStream<T> {
     private Supplier<Stream<T>> supplier;
 
     DataStream(List<T> ts) {
-        this.ts = ts;
-        supplier = ts::stream;
+        set(ts);
     }
 
     DataStream(Supplier<Stream<T>> supplier) {
@@ -31,13 +30,18 @@ public class DataStream<T> {
         return new DataStream<>(supplier);
     }
 
-    public boolean isCollected() {
+    private void set(List<T> list) {
+        ts = list;
+        supplier = list::stream;
+    }
+
+    public boolean isReusable() {
         return ts != null;
     }
 
     private DataStream<T> mod(UnaryOperator<Stream<T>> op) {
         Supplier<Stream<T>> old = supplier, next = () -> op.apply(old.get());
-        if (isCollected()) {
+        if (isReusable()) {
             return new DataStream<>(next);
         } else {
             supplier = next;
@@ -62,19 +66,18 @@ public class DataStream<T> {
         return new DataStream<>(() -> old.get().map(mapper));
     }
 
-    public DataStream<T> collect() {
-        if (!isCollected()) {
-            ts = supplier.get().collect(Collectors.toCollection(DataList::new));
-            supplier = ts::stream;
+    public DataStream<T> reuse() {
+        if (!isReusable()) {
+            set(supplier.get().collect(Collectors.toCollection(DataList::new)));
         }
         return this;
     }
 
-    public DataStream<T> cacheWith(Cache<T> cache) {
+    public DataStream<T> cacheBy(Cache<T> cache) {
         if (cache.exists()) {
             return cache.getReader().get();
         } else {
-            collect();
+            reuse();
             cache.getWriter().accept(ts);
             return this;
         }
@@ -84,7 +87,7 @@ public class DataStream<T> {
         Supplier<LineReader.Text<T>> reader, Supplier<LineWriter<T>> writer) {
         String f = file.endsWith(suffix) ? file : (file + suffix);
         InputStream is = LineReader.toInputStream(f);
-        return cacheWith(new Cache<T>() {
+        return cacheBy(new Cache<T>() {
             @Override
             public boolean exists() {
                 return is != null;
@@ -119,7 +122,7 @@ public class DataStream<T> {
     }
 
     public void forEach(Consumer<T> action) {
-        if (isCollected()) {
+        if (isReusable()) {
             ts.forEach(action);
         } else {
             supplier.get().forEach(action);
@@ -127,7 +130,7 @@ public class DataStream<T> {
     }
 
     public List<T> toList() {
-        collect();
+        reuse();
         return ts;
     }
 
