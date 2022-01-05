@@ -25,8 +25,8 @@ public class CsvReader<T> extends LineReader.Text<T> {
     }
 
     @Override
-    public Session read(InputStream is, int skipLines) {
-        return new Session(is, skipLines);
+    public Session read(InputStream source, int skipLines) {
+        return new Session(source, skipLines);
     }
 
     private void setHeader(String s, String[] header) {
@@ -43,22 +43,22 @@ public class CsvReader<T> extends LineReader.Text<T> {
     }
 
     public class Session extends LineReader.Text<T>.Session {
-        private String[] header;
+        private String[] cols;
 
         public Session(InputStream is, int skipLines) {
             super(is, skipLines);
         }
 
-        public Session csvHeader(String... header) {
-            this.header = header;
+        public Session header(String... cols) {
+            this.cols = cols;
             return this;
         }
 
         @Override
         protected Stream<T> map(Stream<String> stream) {
-            if (header != null && header.length > 0) {
+            if (cols != null && cols.length > 0) {
                 return StreamHelper.consumeFirst(stream,
-                    s -> setHeader(s, header), function);
+                    s -> setHeader(s, cols), function);
             }
             return super.map(stream);
         }
