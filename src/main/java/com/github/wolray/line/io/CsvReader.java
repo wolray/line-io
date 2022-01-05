@@ -49,7 +49,7 @@ public class CsvReader<T> extends LineReader.Text<T> {
             super(is, skipLines);
         }
 
-        public Session header(String... cols) {
+        public Session csvHeader(String... cols) {
             this.cols = cols;
             return this;
         }
