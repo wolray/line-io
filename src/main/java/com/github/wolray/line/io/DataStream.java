@@ -54,10 +54,10 @@ public class DataStream<T> {
     }
 
     public DataStream<T> cache() {
-        if (isCached()) {
-            return this;
+        if (!isCached()) {
+            ts = supplier.get().collect(Collectors.toCollection(DataList::new));
         }
-        return new DataStream<>(toList());
+        return this;
     }
 
     private DataStream<T> cacheFile(String file, String suffix,
@@ -69,9 +69,9 @@ public class DataStream<T> {
         if (is != null) {
             return reader.get().read(is);
         } else {
-            List<T> list = toList();
-            writer.get().writeAsync(list, file);
-            return new DataStream<>(list);
+            cache();
+            writer.get().writeAsync(ts, file);
+            return this;
         }
     }
 
@@ -99,10 +99,8 @@ public class DataStream<T> {
     }
 
     public List<T> toList() {
-        if (isCached()) {
-            return ts;
-        }
-        return supplier.get().collect(Collectors.toCollection(DataList::new));
+        cache();
+        return ts;
     }
 
     public List<T> toArrayList() {
