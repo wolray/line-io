@@ -25,8 +25,13 @@ public class CsvReader<T> extends LineReader.Text<T> {
     }
 
     @Override
-    public Session read(InputStream source, int skipLines) {
-        return new Session(source, skipLines);
+    public Session read(InputStream is) {
+        return read(is, 0);
+    }
+
+    @Override
+    public Session read(InputStream is, int skipLines) {
+        return new Session(is, skipLines);
     }
 
     private void setHeader(String s, String[] header) {
