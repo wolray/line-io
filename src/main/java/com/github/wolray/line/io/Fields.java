@@ -9,6 +9,8 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
 public @interface Fields {
+    boolean pojo() default false;
+
     String[] use() default {};
 
     String[] ignore() default {};

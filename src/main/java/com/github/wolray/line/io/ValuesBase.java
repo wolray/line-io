@@ -15,11 +15,11 @@ class ValuesBase<T> {
 
     ValuesBase(Class<T> type) {
         this.type = type;
-        Stream<FieldContext> stream = Arrays.stream(type.getFields())
+        Fields fields = type.getAnnotation(Fields.class);
+        Stream<FieldContext> stream = getFields(type, fields)
             .filter(f -> !isStatic(f) && !Modifier.isFinal(f.getModifiers()))
             .map(FieldContext::new);
-        fieldContexts = filterFields(stream, type.getAnnotation(Fields.class))
-            .toArray(FieldContext[]::new);
+        fieldContexts = filterFields(stream, fields).toArray(FieldContext[]::new);
     }
 
     static boolean isStatic(Member m) {
@@ -31,6 +31,16 @@ class ValuesBase<T> {
             return method.invoke(null, o);
         } catch (IllegalAccessException | InvocationTargetException e) {
             return null;
+        }
+    }
+
+    private Stream<Field> getFields(Class<T> type, Fields fields) {
+        if (fields != null && fields.pojo()) {
+            return Arrays.stream(type.getDeclaredFields())
+                .filter(f -> Modifier.isPrivate(f.getModifiers()))
+                .peek(f -> f.setAccessible(true));
+        } else {
+            return Arrays.stream(type.getFields());
         }
     }
 
