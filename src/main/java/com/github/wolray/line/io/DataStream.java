@@ -22,8 +22,12 @@ public class DataStream<T> {
         this.supplier = supplier;
     }
 
-    public static <T> DataStream<T> of(List<T> ts) {
-        return new DataStream<>(ts);
+    public static <T> DataStream<T> of(Collection<T> ts) {
+        if (ts instanceof List) {
+            return new DataStream<>((List<T>)ts);
+        } else {
+            return new DataStream<>(ts::stream);
+        }
     }
 
     public static <T> DataStream<T> of(Supplier<Stream<T>> supplier) {
