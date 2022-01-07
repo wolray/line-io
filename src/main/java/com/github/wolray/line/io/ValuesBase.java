@@ -1,6 +1,9 @@
 package com.github.wolray.line.io;
 
-import java.lang.reflect.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
@@ -17,13 +20,9 @@ class ValuesBase<T> {
         this.type = type;
         Fields fields = type.getAnnotation(Fields.class);
         Stream<FieldContext> stream = getFields(type, fields)
-            .filter(f -> !isStatic(f) && !Modifier.isFinal(f.getModifiers()))
+            .filter(f -> checkModifier(f.getModifiers()))
             .map(FieldContext::new);
         fieldContexts = filterFields(stream, fields).toArray(FieldContext[]::new);
-    }
-
-    static boolean isStatic(Member m) {
-        return Modifier.isStatic(m.getModifiers());
     }
 
     static Object invoke(Method method, Object o) {
@@ -32,6 +31,10 @@ class ValuesBase<T> {
         } catch (IllegalAccessException | InvocationTargetException e) {
             return null;
         }
+    }
+
+    static boolean checkModifier(int modifier) {
+        return (modifier & (Modifier.STATIC | Modifier.FINAL | Modifier.TRANSIENT)) == 0;
     }
 
     private Stream<Field> getFields(Class<T> type, Fields fields) {
@@ -52,7 +55,7 @@ class ValuesBase<T> {
         Collections.reverse(classes);
         for (Class<?> c : classes) {
             for (Method m : c.getDeclaredMethods()) {
-                if (isStatic(m)) {
+                if (Modifier.isStatic(m.getModifiers())) {
                     Class<?>[] types = m.getParameterTypes();
                     Class<?> returnType = m.getReturnType();
                     if (types.length == 1 && returnType != void.class) {
