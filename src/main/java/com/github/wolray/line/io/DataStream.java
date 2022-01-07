@@ -124,6 +124,10 @@ public class DataStream<T> {
             LineWriter::byJson);
     }
 
+    public boolean isEmpty() {
+        return toList().isEmpty();
+    }
+
     public void forEach(Consumer<T> action) {
         if (isReusable()) {
             ts.forEach(action);
