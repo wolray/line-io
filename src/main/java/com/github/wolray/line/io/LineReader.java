@@ -143,7 +143,7 @@ public class LineReader<S, V, T> {
         }
 
         public DataStream<T> stream() {
-            return new DataStream<>(() -> map(toStream(source).skip(skipLines)));
+            return DataStream.of(() -> map(toStream(source).skip(skipLines)));
         }
     }
 }

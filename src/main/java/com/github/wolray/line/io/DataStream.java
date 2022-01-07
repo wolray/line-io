@@ -14,11 +14,11 @@ public class DataStream<T> {
     private List<T> ts;
     private Supplier<Stream<T>> supplier;
 
-    DataStream(List<T> ts) {
+    private DataStream(List<T> ts) {
         set(ts);
     }
 
-    DataStream(Supplier<Stream<T>> supplier) {
+    private DataStream(Supplier<Stream<T>> supplier) {
         this.supplier = supplier;
     }
 
@@ -26,12 +26,16 @@ public class DataStream<T> {
         if (ts instanceof List) {
             return new DataStream<>((List<T>)ts);
         } else {
-            return new DataStream<>(ts::stream);
+            return of(ts::stream);
         }
     }
 
     public static <T> DataStream<T> of(Supplier<Stream<T>> supplier) {
         return new DataStream<>(supplier);
+    }
+
+    public static <T> DataStream<T> empty() {
+        return of(Stream::empty);
     }
 
     private void set(List<T> list) {
@@ -46,7 +50,7 @@ public class DataStream<T> {
     private DataStream<T> mod(UnaryOperator<Stream<T>> op) {
         Supplier<Stream<T>> old = supplier, next = () -> op.apply(old.get());
         if (isReusable()) {
-            return new DataStream<>(next);
+            return of(next);
         } else {
             supplier = next;
             return this;
@@ -67,7 +71,7 @@ public class DataStream<T> {
 
     public <E> DataStream<E> map(Function<T, E> mapper) {
         Supplier<Stream<T>> old = supplier;
-        return new DataStream<>(() -> old.get().map(mapper));
+        return of(() -> old.get().map(mapper));
     }
 
     public DataStream<T> reuse() {
@@ -122,10 +126,6 @@ public class DataStream<T> {
         return cacheFile(file, ".txt",
             () -> LineReader.byJson(type),
             LineWriter::byJson);
-    }
-
-    public boolean isEmpty() {
-        return toList().isEmpty();
     }
 
     public void forEach(Consumer<T> action) {
