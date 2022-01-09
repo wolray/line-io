@@ -103,5 +103,5 @@ public class DemoTest {
 ```
 
 ## How to use
-this package is published via [jitpack](https://www.jitpack.io/#wolray/line-io),
+This package is published via [jitpack](https://www.jitpack.io/#wolray/line-io),
 put the latest dependency into you project. 
