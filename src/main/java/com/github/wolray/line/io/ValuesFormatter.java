@@ -1,7 +1,6 @@
 package com.github.wolray.line.io;
 
 import java.lang.reflect.Method;
-import java.util.Collections;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.function.Function;
@@ -23,9 +22,6 @@ public class ValuesFormatter<T> extends ValuesBase<T> implements Function<T, Str
     private void initFormatters() {
         Function<Object, String> fmt = String::valueOf;
         Map<Class<?>, Function<Object, String>> map = TypeScanner.getFormatterMap();
-        if (map == null) {
-            map = Collections.emptyMap();
-        }
         for (FieldContext context : fieldContexts) {
             context.formatter = map.getOrDefault(context.field.getType(), fmt);
         }

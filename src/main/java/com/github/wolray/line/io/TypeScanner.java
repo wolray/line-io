@@ -2,6 +2,7 @@ package com.github.wolray.line.io;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
@@ -69,11 +70,11 @@ public class TypeScanner {
     }
 
     public static Map<Class<?>, Function<String, ?>> getParserMap() {
-        return parserMap;
+        return parserMap != null ? parserMap : Collections.emptyMap();
     }
 
     public static Map<Class<?>, Function<Object, String>> getFormatterMap() {
-        return formatterMap;
+        return formatterMap != null ? formatterMap : Collections.emptyMap();
     }
 
     public static Object invoke(Method method, Object o) {

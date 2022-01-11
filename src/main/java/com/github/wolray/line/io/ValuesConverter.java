@@ -57,10 +57,7 @@ public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, 
         parserMap.put(Long.class, Long::parseLong);
         parserMap.put(double.class, Double::parseDouble);
         parserMap.put(Double.class, Double::parseDouble);
-        Map<Class<?>, Function<String, ?>> map = TypeScanner.getParserMap();
-        if (map != null) {
-            parserMap.putAll(map);
-        }
+        parserMap.putAll(TypeScanner.getParserMap());
         for (FieldContext context : fieldContexts) {
             context.parser = parserMap.get(context.field.getType());
         }
