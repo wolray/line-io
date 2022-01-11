@@ -14,6 +14,8 @@ import java.util.function.ToIntFunction;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
+import static com.github.wolray.line.io.TypeScanner.invoke;
+
 /**
  * @author ray
  */
@@ -55,6 +57,10 @@ public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, 
         parserMap.put(Long.class, Long::parseLong);
         parserMap.put(double.class, Double::parseDouble);
         parserMap.put(Double.class, Double::parseDouble);
+        Map<Class<?>, Function<String, ?>> map = TypeScanner.getParserMap();
+        if (map != null) {
+            parserMap.putAll(map);
+        }
         for (FieldContext context : fieldContexts) {
             context.parser = parserMap.get(context.field.getType());
         }

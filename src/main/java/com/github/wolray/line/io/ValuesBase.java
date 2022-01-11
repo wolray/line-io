@@ -1,10 +1,11 @@
 package com.github.wolray.line.io;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
@@ -18,19 +19,11 @@ class ValuesBase<T> {
 
     ValuesBase(Class<T> type) {
         this.type = type;
-        Fields fields = type.getAnnotation(Fields.class);
+        Fields fields = TypeScanner.get(type);
         Stream<FieldContext> stream = getFields(type, fields)
             .filter(f -> checkModifier(f.getModifiers()))
             .map(FieldContext::new);
         fieldContexts = filterFields(stream, fields).toArray(FieldContext[]::new);
-    }
-
-    static Object invoke(Method method, Object o) {
-        try {
-            return method.invoke(null, o);
-        } catch (IllegalAccessException | InvocationTargetException e) {
-            return null;
-        }
     }
 
     static boolean checkModifier(int modifier) {
@@ -48,19 +41,12 @@ class ValuesBase<T> {
     }
 
     void processStaticMethods() {
-        List<Class<?>> classes = new ArrayList<>();
-        for (Class<?> c = type; c != Object.class; c = c.getSuperclass()) {
-            classes.add(c);
-        }
-        Collections.reverse(classes);
-        for (Class<?> c : classes) {
-            for (Method m : c.getDeclaredMethods()) {
-                if (Modifier.isStatic(m.getModifiers())) {
-                    Class<?>[] types = m.getParameterTypes();
-                    Class<?> returnType = m.getReturnType();
-                    if (types.length == 1 && returnType != void.class) {
-                        processMethod(m, types[0], returnType);
-                    }
+        for (Method m : type.getDeclaredMethods()) {
+            if (Modifier.isStatic(m.getModifiers())) {
+                Class<?>[] types = m.getParameterTypes();
+                Class<?> returnType = m.getReturnType();
+                if (types.length == 1 && returnType != void.class) {
+                    processMethod(m, types[0], returnType);
                 }
             }
         }
