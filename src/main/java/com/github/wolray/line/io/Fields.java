@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * @author ray
  */
-@Target({ElementType.TYPE, ElementType.METHOD})
+@Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Fields {
     boolean pojo() default false;

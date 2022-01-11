@@ -1,5 +1,6 @@
 package com.github.wolray.line.io;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -12,19 +13,21 @@ import java.util.function.Function;
  * @author wolray
  */
 public class TypeScanner {
-    private static Map<Class<?>, Object> scanMap;
     private static Map<Class<?>, Fields> typeFieldsMap;
     private static Map<Class<?>, Function<String, ?>> parserMap;
     private static Map<Class<?>, Function<Object, String>> formatterMap;
 
     public static synchronized void scan(Class<?> clazz) {
-        if (scanMap == null) {
-            scanMap = new ConcurrentHashMap<>();
+        for (Field field : clazz.getDeclaredFields()) {
+            Fields annotation = field.getAnnotation(Fields.class);
+            if (annotation != null) {
+                if (typeFieldsMap == null) {
+                    typeFieldsMap = new ConcurrentHashMap<>();
+                }
+                typeFieldsMap.put(field.getType(), annotation);
+            }
         }
-        if (scanMap.containsKey(clazz)) {
-            return;
-        }
-        scanMap.put(clazz, Object.class);
+
         for (Method method : clazz.getDeclaredMethods()) {
             if (!Modifier.isStatic(method.getModifiers())) {
                 continue;
@@ -32,13 +35,6 @@ public class TypeScanner {
             Class<?> returnType = method.getReturnType();
             if (returnType == void.class) {
                 continue;
-            }
-            Fields fields = method.getAnnotation(Fields.class);
-            if (fields != null) {
-                if (typeFieldsMap == null) {
-                    typeFieldsMap = new ConcurrentHashMap<>();
-                }
-                typeFieldsMap.put(returnType, fields);
             }
             Class<?>[] parameterTypes = method.getParameterTypes();
             if (parameterTypes.length != 1) {
@@ -48,6 +44,7 @@ public class TypeScanner {
             if (parameterType == returnType) {
                 continue;
             }
+
             if (parameterType == String.class) {
                 if (parserMap == null) {
                     parserMap = new ConcurrentHashMap<>();
@@ -65,7 +62,6 @@ public class TypeScanner {
     }
 
     public static synchronized void clear() {
-        scanMap = null;
         typeFieldsMap = null;
         parserMap = null;
         formatterMap = null;
