@@ -65,8 +65,10 @@ public class TypeScanner {
     }
 
     public static synchronized void clear() {
-        scanMap.clear();
+        scanMap = null;
         typeFieldsMap = null;
+        parserMap = null;
+        formatterMap = null;
     }
 
     static Fields get(Class<?> type) {
