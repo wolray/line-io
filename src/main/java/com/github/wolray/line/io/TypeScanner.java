@@ -2,6 +2,7 @@ package com.github.wolray.line.io;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,30 +26,40 @@ public class TypeScanner {
         }
         scanMap.put(clazz, Object.class);
         for (Method method : clazz.getDeclaredMethods()) {
-            Fields fields = method.getAnnotation(Fields.class);
+            if (!Modifier.isStatic(method.getModifiers())) {
+                continue;
+            }
             Class<?> returnType = method.getReturnType();
-            if (returnType != void.class) {
-                if (fields != null) {
-                    if (typeFieldsMap == null) {
-                        typeFieldsMap = new ConcurrentHashMap<>();
-                    }
-                    typeFieldsMap.put(returnType, fields);
+            if (returnType == void.class) {
+                continue;
+            }
+            Fields fields = method.getAnnotation(Fields.class);
+            if (fields != null) {
+                if (typeFieldsMap == null) {
+                    typeFieldsMap = new ConcurrentHashMap<>();
                 }
-                Class<?>[] parameterTypes = method.getParameterTypes();
-                if (parameterTypes.length == 1) {
-                    Class<?> parameterType = parameterTypes[0];
-                    if (parameterType == String.class) {
-                        if (parserMap == null) {
-                            parserMap = new ConcurrentHashMap<>();
-                        }
-                        parserMap.put(returnType, s -> invoke(method, s));
-                    } else if (returnType == String.class) {
-                        if (formatterMap == null) {
-                            formatterMap = new ConcurrentHashMap<>();
-                        }
-                        formatterMap.put(parameterType, o -> (String)invoke(method, o));
-                    }
+                typeFieldsMap.put(returnType, fields);
+            }
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            if (parameterTypes.length != 1) {
+                continue;
+            }
+            Class<?> parameterType = parameterTypes[0];
+            if (parameterType == returnType) {
+                continue;
+            }
+            if (parameterType == String.class) {
+                if (parserMap == null) {
+                    parserMap = new ConcurrentHashMap<>();
                 }
+                method.setAccessible(true);
+                parserMap.put(returnType, s -> invoke(method, s));
+            } else if (returnType == String.class) {
+                if (formatterMap == null) {
+                    formatterMap = new ConcurrentHashMap<>();
+                }
+                method.setAccessible(true);
+                formatterMap.put(parameterType, o -> (String)invoke(method, o));
             }
         }
     }
@@ -58,7 +69,7 @@ public class TypeScanner {
         typeFieldsMap = null;
     }
 
-    public static Fields get(Class<?> type) {
+    static Fields get(Class<?> type) {
         Fields fields = type.getAnnotation(Fields.class);
         if (fields != null) {
             return fields;
@@ -69,15 +80,15 @@ public class TypeScanner {
         return null;
     }
 
-    public static Map<Class<?>, Function<String, ?>> getParserMap() {
+    static Map<Class<?>, Function<String, ?>> getParserMap() {
         return parserMap != null ? parserMap : Collections.emptyMap();
     }
 
-    public static Map<Class<?>, Function<Object, String>> getFormatterMap() {
+    static Map<Class<?>, Function<Object, String>> getFormatterMap() {
         return formatterMap != null ? formatterMap : Collections.emptyMap();
     }
 
-    public static Object invoke(Method method, Object o) {
+    static Object invoke(Method method, Object o) {
         try {
             return method.invoke(null, o);
         } catch (IllegalAccessException | InvocationTargetException e) {
