@@ -117,10 +117,8 @@ public class DataStream<T> {
     }
 
     public DataStream<T> cacheCsv(String file, Class<T> type, String sep) {
-        DataMapper<T> dataMapper = new DataMapper<>(type, sep);
-        return cacheFile(file, ".csv",
-            () -> new LineReader.Text<>(dataMapper::parse),
-            () -> new LineWriter<>(dataMapper::format));
+        DataMapper<T> mapper = new DataMapper<>(type, sep);
+        return cacheFile(file, ".csv", mapper::toReader, mapper::toWriter);
     }
 
     public DataStream<T> cacheJson(String file, Class<T> type) {

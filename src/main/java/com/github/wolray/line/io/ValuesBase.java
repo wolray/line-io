@@ -65,9 +65,9 @@ class ValuesBase<T> {
                 Set<String> set = new HashSet<>(Arrays.asList(use));
                 return stream.filter(c -> set.contains(c.field.getName()));
             }
-            String[] ignore = fields.ignore();
-            if (ignore.length > 0) {
-                Set<String> set = new HashSet<>(Arrays.asList(ignore));
+            String[] omit = fields.omit();
+            if (omit.length > 0) {
+                Set<String> set = new HashSet<>(Arrays.asList(omit));
                 return stream.filter(c -> !set.contains(c.field.getName()));
             }
             String regex = fields.regex();
@@ -83,7 +83,7 @@ class ValuesBase<T> {
         UnaryOperator<String> mapper;
         Function<String, ?> parser;
         Function<Object, ?> function;
-        Function<Object, String> formatter;
+        Function<Object, String> printer;
 
         FieldContext(Field field) {
             this.field = field;
@@ -111,8 +111,8 @@ class ValuesBase<T> {
             }
         }
 
-        String format(Object o) {
-            return o != null ? formatter.apply(o) : "";
+        String print(Object o) {
+            return o != null ? printer.apply(o) : "";
         }
 
         Object get(Object t) {

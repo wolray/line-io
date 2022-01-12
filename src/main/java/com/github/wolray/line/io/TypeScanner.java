@@ -1,13 +1,11 @@
 package com.github.wolray.line.io;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 /**
  * @author wolray
@@ -15,9 +13,9 @@ import java.util.function.Function;
 public class TypeScanner {
     private static boolean hasTypeFields = false;
     private static boolean hasParser = false;
-    private static boolean hasFormatter = false;
+    private static boolean hasPrinter = false;
 
-    public static void scan(Class<?> clazz) {
+    public static synchronized void scan(Class<?> clazz) {
         Map<Class<?>, Object> scanMap = ScanMap.INSTANCE;
         if (scanMap.containsKey(clazz)) {
             return;
@@ -25,13 +23,13 @@ public class TypeScanner {
         scanMap.put(clazz, Object.class);
 
         for (Field f : clazz.getDeclaredFields()) {
-            Class<?> type = f.getType();
             Fields fields = f.getAnnotation(Fields.class);
-            if (fields != null) {
-                TypeFieldsMap.INSTANCE.put(type, fields);
-                hasTypeFields = true;
+            Class<?> type = f.getType();
+            if (type == DataMapper.class) {
+                initStaticByTypePara(f, fields, DataMapper::new);
+            } else if (fields != null) {
+                addTypeFields(type, fields);
             }
-            getDataMapper(type, f.getAnnotation(WithDataMapper.class));
         }
 
         for (Method method : clazz.getDeclaredMethods()) {
@@ -57,26 +55,18 @@ public class TypeScanner {
                 hasParser = true;
             } else if (returnType == String.class) {
                 method.setAccessible(true);
-                FormatterMap.INSTANCE.put(parameterType, o -> (String)invoke(method, o));
-                hasFormatter = true;
+                PrinterMap.INSTANCE.put(parameterType, o -> (String)invoke(method, o));
+                hasPrinter = true;
             }
         }
     }
 
-    public static <T> DataMapper<T> getDataMapper(Class<T> type) {
-        return getDataMapper(type, type.getAnnotation(WithDataMapper.class));
-    }
-
-    @SuppressWarnings("unchecked")
-    private static <T> DataMapper<T> getDataMapper(Class<T> type, WithDataMapper withDataMapper) {
-        if (withDataMapper != null) {
-            return (DataMapper<T>)DataMapperMap.INSTANCE.computeIfAbsent(type, t -> new DataMapper<>(t, withDataMapper.sep()));
-        }
-        return null;
-    }
-
-    static Fields getFields(Class<?> type) {
+    static synchronized Fields getFields(Class<?> type) {
         Fields fields = type.getAnnotation(Fields.class);
+        if (fields != null) {
+            return fields;
+        }
+        fields = TempFieldsMap.INSTANCE.get(type);
         if (fields != null) {
             return fields;
         }
@@ -86,12 +76,47 @@ public class TypeScanner {
         return null;
     }
 
+    private static void initStaticByTypePara(Field f, Fields fields,
+        Function<Class<?>, ?> typeToObject) {
+        if (Modifier.isStatic(f.getModifiers())) {
+            Type genericType = f.getGenericType();
+            if (genericType instanceof ParameterizedType) {
+                Type argument = ((ParameterizedType)genericType).getActualTypeArguments()[0];
+                Class<?> type = (Class<?>)argument;
+                if (fields != null) {
+                    TempFieldsMap.INSTANCE.put(type, fields);
+                    setStaticField(f, () -> typeToObject.apply(type));
+                    TempFieldsMap.INSTANCE.remove(type);
+                } else {
+                    setStaticField(f, () -> typeToObject.apply(type));
+                }
+            }
+        }
+    }
+
+    private static void setStaticField(Field field, Supplier<?> supplier) {
+        try {
+            field.setAccessible(true);
+            Object value = field.get(null);
+            if (value == null) {
+                field.set(null, supplier.get());
+            }
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private static void addTypeFields(Class<?> type, Fields fields) {
+        TypeFieldsMap.INSTANCE.put(type, fields);
+        hasTypeFields = true;
+    }
+
     static Map<Class<?>, Function<String, ?>> getParserMap() {
         return hasParser ? ParserMap.INSTANCE : Collections.emptyMap();
     }
 
-    static Map<Class<?>, Function<Object, String>> getFormatterMap() {
-        return hasFormatter ? FormatterMap.INSTANCE : Collections.emptyMap();
+    static Map<Class<?>, Function<Object, String>> getPrinterMap() {
+        return hasPrinter ? PrinterMap.INSTANCE : Collections.emptyMap();
     }
 
     static Object invoke(Method method, Object o) {
@@ -110,15 +135,15 @@ public class TypeScanner {
         private static final Map<Class<?>, Fields> INSTANCE = new ConcurrentHashMap<>();
     }
 
-    private static class DataMapperMap {
-        private static final Map<Class<?>, DataMapper<?>> INSTANCE = new ConcurrentHashMap<>();
+    private static class TempFieldsMap {
+        private static final Map<Class<?>, Fields> INSTANCE = new ConcurrentHashMap<>();
     }
 
     private static class ParserMap {
         private static final Map<Class<?>, Function<String, ?>> INSTANCE = new ConcurrentHashMap<>();
     }
 
-    private static class FormatterMap {
+    private static class PrinterMap {
         private static final Map<Class<?>, Function<Object, String>> INSTANCE = new ConcurrentHashMap<>();
     }
 }

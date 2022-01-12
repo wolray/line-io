@@ -10,20 +10,17 @@ import static com.github.wolray.line.io.TypeScanner.invoke;
 /**
  * @author ray
  */
-public class ValuesFormatter<T> extends ValuesBase<T> implements Function<T, String> {
-    private final String sep;
-
-    public ValuesFormatter(Class<T> type, String sep) {
+public class ValuesFormatter<T> extends ValuesBase<T> {
+    public ValuesFormatter(Class<T> type) {
         super(type);
-        this.sep = sep;
         initFormatters();
     }
 
     private void initFormatters() {
         Function<Object, String> toString = Object::toString;
-        Map<Class<?>, Function<Object, String>> map = TypeScanner.getFormatterMap();
+        Map<Class<?>, Function<Object, String>> map = TypeScanner.getPrinterMap();
         for (FieldContext context : fieldContexts) {
-            context.formatter = map.getOrDefault(context.field.getType(), toString);
+            context.printer = map.getOrDefault(context.field.getType(), toString);
         }
         processStaticMethods();
     }
@@ -35,11 +32,11 @@ public class ValuesFormatter<T> extends ValuesBase<T> implements Function<T, Str
             Function<Object, String> function = s -> (String)invoke(method, s);
             filterFields(method.getAnnotation(Fields.class))
                 .filter(c -> c.field.getType() == paraType)
-                .forEach(c -> c.formatter = function);
+                .forEach(c -> c.printer = function);
         }
     }
 
-    String joinFields(Function<FieldContext, String> function) {
+    String join(String sep, Function<FieldContext, String> function) {
         StringJoiner joiner = new StringJoiner(sep);
         for (FieldContext context : fieldContexts) {
             joiner.add(function.apply(context));
@@ -47,8 +44,7 @@ public class ValuesFormatter<T> extends ValuesBase<T> implements Function<T, Str
         return joiner.toString();
     }
 
-    @Override
-    public String apply(T t) {
-        return joinFields(c -> c.format(c.get(t)));
+    public Function<T, String> toPrinter(String sep) {
+        return t -> join(sep, c -> c.print(c.get(t)));
     }
 }

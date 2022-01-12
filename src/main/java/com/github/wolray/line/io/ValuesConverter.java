@@ -141,6 +141,10 @@ public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, 
         protected Object convertAt(String[] values, int index, FieldContext context) {
             return context.parse(values[index]);
         }
+
+        public Function<String, T> toParser(String sep) {
+            return compose(s -> s.split(sep));
+        }
     }
 
     public static class Excel<T> extends ValuesConverter<Row, T> {

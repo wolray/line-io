@@ -13,13 +13,13 @@ import java.util.function.Function;
  * @author ray
  */
 public class LineWriter<T> {
-    private final Function<T, String> formatter;
+    private final Function<T, String> printer;
     private String header;
     private boolean markCsvAsUtf8;
     private boolean append;
 
-    public LineWriter(Function<T, String> formatter) {
-        this.formatter = formatter;
+    public LineWriter(Function<T, String> printer) {
+        this.printer = printer;
     }
 
     public static <T> LineWriter<T> byJson() {
@@ -27,17 +27,17 @@ public class LineWriter<T> {
     }
 
     public static <T> LineWriter<T> byCsv(String sep, Class<T> type, boolean withHeader) {
-        ValuesFormatter<T> formatter = new ValuesFormatter<>(type, sep);
-        LineWriter<T> res = new LineWriter<>(formatter);
+        ValuesFormatter<T> formatter = new ValuesFormatter<>(type);
+        LineWriter<T> res = new LineWriter<>(formatter.toPrinter(sep));
         if (withHeader) {
-            res.header(formatter.joinFields(c -> c.field.getName()));
+            res.header(formatter.join(sep, c -> c.field.getName()));
         }
         return res;
     }
 
     public static <T> LineWriter<T> byCsv(String sep, Class<T> type, String... columns) {
-        ValuesFormatter<T> formatter = new ValuesFormatter<>(type, sep);
-        LineWriter<T> res = new LineWriter<>(formatter);
+        ValuesFormatter<T> formatter = new ValuesFormatter<>(type);
+        LineWriter<T> res = new LineWriter<>(formatter.toPrinter(sep));
         if (columns.length > 0) {
             res.header(String.join(sep, columns));
         }
@@ -74,9 +74,9 @@ public class LineWriter<T> {
                     bw.write('\n');
                 }
             }
-            Function<T, String> formatter = this.formatter;
+            Function<T, String> printer = this.printer;
             for (T t : iterable) {
-                bw.write(formatter.apply(t));
+                bw.write(printer.apply(t));
                 bw.write('\n');
             }
         } catch (IOException e) {

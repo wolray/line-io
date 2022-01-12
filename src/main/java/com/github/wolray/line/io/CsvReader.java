@@ -14,7 +14,7 @@ public class CsvReader<T> extends LineReader.Text<T> {
     private final String sep;
 
     CsvReader(ValuesConverter.Text<T> converter, String sep) {
-        super(converter.compose(s -> s.split(sep)));
+        super(converter.toParser(sep));
         this.converter = converter;
         this.sep = sep;
     }
@@ -47,7 +47,7 @@ public class CsvReader<T> extends LineReader.Text<T> {
         reorder(slots);
     }
 
-    public class Session extends LineReader.Text<T>.Session {
+    public class Session extends Text<T>.Session {
         private String[] cols;
 
         public Session(InputStream is, int skipLines) {
