@@ -13,19 +13,25 @@ import java.util.function.Function;
  * @author wolray
  */
 public class TypeScanner {
-    private static Map<Class<?>, Fields> typeFieldsMap;
-    private static Map<Class<?>, Function<String, ?>> parserMap;
-    private static Map<Class<?>, Function<Object, String>> formatterMap;
+    private static boolean hasTypeFields = false;
+    private static boolean hasParser = false;
+    private static boolean hasFormatter = false;
 
-    public static synchronized void scan(Class<?> clazz) {
-        for (Field field : clazz.getDeclaredFields()) {
-            Fields annotation = field.getAnnotation(Fields.class);
-            if (annotation != null) {
-                if (typeFieldsMap == null) {
-                    typeFieldsMap = new ConcurrentHashMap<>();
-                }
-                typeFieldsMap.put(field.getType(), annotation);
+    public static void scan(Class<?> clazz) {
+        Map<Class<?>, Object> scanMap = ScanMap.INSTANCE;
+        if (scanMap.containsKey(clazz)) {
+            return;
+        }
+        scanMap.put(clazz, Object.class);
+
+        for (Field f : clazz.getDeclaredFields()) {
+            Class<?> type = f.getType();
+            Fields fields = f.getAnnotation(Fields.class);
+            if (fields != null) {
+                TypeFieldsMap.INSTANCE.put(type, fields);
+                hasTypeFields = true;
             }
+            getDataMapper(type, f.getAnnotation(WithDataMapper.class));
         }
 
         for (Method method : clazz.getDeclaredMethods()) {
@@ -46,38 +52,46 @@ public class TypeScanner {
             }
 
             if (parameterType == String.class) {
-                if (parserMap == null) {
-                    parserMap = new ConcurrentHashMap<>();
-                }
                 method.setAccessible(true);
-                parserMap.put(returnType, s -> invoke(method, s));
+                ParserMap.INSTANCE.put(returnType, s -> invoke(method, s));
+                hasParser = true;
             } else if (returnType == String.class) {
-                if (formatterMap == null) {
-                    formatterMap = new ConcurrentHashMap<>();
-                }
                 method.setAccessible(true);
-                formatterMap.put(parameterType, o -> (String)invoke(method, o));
+                FormatterMap.INSTANCE.put(parameterType, o -> (String)invoke(method, o));
+                hasFormatter = true;
             }
         }
     }
 
-    static Fields get(Class<?> type) {
+    public static <T> DataMapper<T> getDataMapper(Class<T> type) {
+        return getDataMapper(type, type.getAnnotation(WithDataMapper.class));
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> DataMapper<T> getDataMapper(Class<T> type, WithDataMapper withDataMapper) {
+        if (withDataMapper != null) {
+            return (DataMapper<T>)DataMapperMap.INSTANCE.computeIfAbsent(type, t -> new DataMapper<>(t, withDataMapper.sep()));
+        }
+        return null;
+    }
+
+    static Fields getFields(Class<?> type) {
         Fields fields = type.getAnnotation(Fields.class);
         if (fields != null) {
             return fields;
         }
-        if (typeFieldsMap != null) {
-            return typeFieldsMap.get(type);
+        if (hasTypeFields) {
+            return TypeFieldsMap.INSTANCE.get(type);
         }
         return null;
     }
 
     static Map<Class<?>, Function<String, ?>> getParserMap() {
-        return parserMap != null ? parserMap : Collections.emptyMap();
+        return hasParser ? ParserMap.INSTANCE : Collections.emptyMap();
     }
 
     static Map<Class<?>, Function<Object, String>> getFormatterMap() {
-        return formatterMap != null ? formatterMap : Collections.emptyMap();
+        return hasFormatter ? FormatterMap.INSTANCE : Collections.emptyMap();
     }
 
     static Object invoke(Method method, Object o) {
@@ -86,5 +100,25 @@ public class TypeScanner {
         } catch (IllegalAccessException | InvocationTargetException e) {
             return null;
         }
+    }
+
+    private static class ScanMap {
+        private static final Map<Class<?>, Object> INSTANCE = new ConcurrentHashMap<>();
+    }
+
+    private static class TypeFieldsMap {
+        private static final Map<Class<?>, Fields> INSTANCE = new ConcurrentHashMap<>();
+    }
+
+    private static class DataMapperMap {
+        private static final Map<Class<?>, DataMapper<?>> INSTANCE = new ConcurrentHashMap<>();
+    }
+
+    private static class ParserMap {
+        private static final Map<Class<?>, Function<String, ?>> INSTANCE = new ConcurrentHashMap<>();
+    }
+
+    private static class FormatterMap {
+        private static final Map<Class<?>, Function<Object, String>> INSTANCE = new ConcurrentHashMap<>();
     }
 }

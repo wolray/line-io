@@ -19,7 +19,7 @@ class ValuesBase<T> {
 
     ValuesBase(Class<T> type) {
         this.type = type;
-        Fields fields = TypeScanner.get(type);
+        Fields fields = TypeScanner.getFields(type);
         Stream<FieldContext> stream = getFields(type, fields)
             .filter(f -> checkModifier(f.getModifiers()))
             .map(FieldContext::new);
