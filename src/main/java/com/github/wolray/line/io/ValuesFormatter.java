@@ -20,10 +20,10 @@ public class ValuesFormatter<T> extends ValuesBase<T> implements Function<T, Str
     }
 
     private void initFormatters() {
-        Function<Object, String> fmt = String::valueOf;
+        Function<Object, String> toString = Object::toString;
         Map<Class<?>, Function<Object, String>> map = TypeScanner.getFormatterMap();
         for (FieldContext context : fieldContexts) {
-            context.formatter = map.getOrDefault(context.field.getType(), fmt);
+            context.formatter = map.getOrDefault(context.field.getType(), toString);
         }
         processStaticMethods();
     }
@@ -49,6 +49,6 @@ public class ValuesFormatter<T> extends ValuesBase<T> implements Function<T, Str
 
     @Override
     public String apply(T t) {
-        return joinFields(c -> c.format(t));
+        return joinFields(c -> c.format(c.get(t)));
     }
 }

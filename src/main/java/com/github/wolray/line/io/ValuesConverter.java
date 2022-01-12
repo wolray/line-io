@@ -139,7 +139,7 @@ public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, 
 
         @Override
         protected Object convertAt(String[] values, int index, FieldContext context) {
-            return context.convertString(values[index]);
+            return context.parse(values[index]);
         }
     }
 
@@ -162,7 +162,7 @@ public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, 
                 if (function != null) {
                     context.function = o -> function.apply((Cell)o);
                 } else {
-                    context.function = o -> context.convertString(df.formatCellValue((Cell)o));
+                    context.function = o -> context.parse(df.formatCellValue((Cell)o));
                 }
             }
         }
@@ -170,7 +170,7 @@ public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, 
         @Override
         protected Object convertAt(Row row, int index, FieldContext context) {
             Cell cell = row.getCell(index);
-            return context.convertObject(cell);
+            return context.convert(cell);
         }
     }
 }

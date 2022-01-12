@@ -95,12 +95,12 @@ class ValuesBase<T> {
             }
         }
 
-        public Object convertString(String s) {
-            return parser.apply(s);
+        public Object parse(String s) {
+            return !s.isEmpty() ? parser.apply(s) : null;
         }
 
-        public Object convertObject(Object o) {
-            return function.apply(o);
+        public Object convert(Object o) {
+            return o != null ? function.apply(o) : null;
         }
 
         void set(Object t, Object o) {
@@ -111,16 +111,16 @@ class ValuesBase<T> {
             }
         }
 
+        String format(Object o) {
+            return o != null ? formatter.apply(o) : "";
+        }
+
         Object get(Object t) {
             try {
                 return field.get(t);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
-        }
-
-        String format(Object t) {
-            return formatter.apply(get(t));
         }
     }
 }
