@@ -61,12 +61,6 @@ public class TypeScanner {
         }
     }
 
-    public static synchronized void clear() {
-        typeFieldsMap = null;
-        parserMap = null;
-        formatterMap = null;
-    }
-
     static Fields get(Class<?> type) {
         Fields fields = type.getAnnotation(Fields.class);
         if (fields != null) {
