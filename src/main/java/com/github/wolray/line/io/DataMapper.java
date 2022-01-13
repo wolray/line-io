@@ -83,20 +83,6 @@ public class DataMapper<T> {
         return converter;
     }
 
-    private Function<T, String> getFormatter() {
-        if (formatter == null) {
-            formatter = toFormatter(sep);
-        }
-        return formatter;
-    }
-
-    private Function<String, T> getParser() {
-        if (parser == null) {
-            parser = toParser(sep);
-        }
-        return parser;
-    }
-
     public Function<T, String> toFormatter(String sep) {
         return getJoiner().toFormatter(sep);
     }
@@ -122,10 +108,26 @@ public class DataMapper<T> {
     }
 
     public String format(T t) {
-        return getFormatter().apply(t);
+        try {
+            return formatter.apply(t);
+        } catch (NullPointerException e) {
+            if (formatter != null) {
+                throw e;
+            }
+            formatter = toFormatter(sep);
+            return formatter.apply(t);
+        }
     }
 
     public T parse(String s) {
-        return getParser().apply(s);
+        try {
+            return parser.apply(s);
+        } catch (NullPointerException e) {
+            if (parser != null) {
+                throw e;
+            }
+            parser = toParser(sep);
+            return parser.apply(s);
+        }
     }
 }
