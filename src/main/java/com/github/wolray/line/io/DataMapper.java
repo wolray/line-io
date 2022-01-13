@@ -10,19 +10,19 @@ import java.util.function.Function;
  * @author wolray
  */
 public class DataMapper<T> {
-    private final TypeData<T> typeData;
+    private final TypeValues<T> typeValues;
     private final String sep;
     private ValuesJoiner<T> joiner;
     private ValuesConverter.Text<T> converter;
     private Function<T, String> formatter;
     private Function<String, T> parser;
 
-    public DataMapper(TypeData<T> typeData) {
-        this(typeData, "\u02cc");
+    public DataMapper(TypeValues<T> typeValues) {
+        this(typeValues, "\u02cc");
     }
 
-    public DataMapper(TypeData<T> typeData, String sep) {
-        this.typeData = typeData;
+    public DataMapper(TypeValues<T> typeValues, String sep) {
+        this.typeValues = typeValues;
         this.sep = sep;
     }
 
@@ -32,11 +32,11 @@ public class DataMapper<T> {
                 if (Modifier.isStatic(f.getModifiers())) {
                     Class<?> type = f.getType();
                     if (type == DataMapper.class) {
-                        TypeData<?> typeData = initTypeData(f);
+                        TypeValues<?> typeValues = initTypeData(f);
                         f.setAccessible(true);
                         Object value = f.get(null);
                         if (value == null) {
-                            f.set(null, new DataMapper<>(typeData));
+                            f.set(null, new DataMapper<>(typeValues));
                         }
                     }
                 }
@@ -46,31 +46,38 @@ public class DataMapper<T> {
         }
     }
 
-    private static TypeData<?> initTypeData(Field f) {
+    private static TypeValues<?> initTypeData(Field f) {
         Type genericType = f.getGenericType();
         if (genericType instanceof ParameterizedType) {
             Type argument = ((ParameterizedType)genericType).getActualTypeArguments()[0];
             Class<?> type = (Class<?>)argument;
             Fields fields = f.getAnnotation(Fields.class);
             if (fields != null) {
-                return new TypeData<>(type, fields);
+                return new TypeValues<>(type, fields);
             } else {
-                return new TypeData<>(type);
+                return new TypeValues<>(type);
             }
         }
         throw new IllegalStateException("unset DataMapper type");
     }
 
+    public DataMapper<T> newSep(String sep) {
+        if (sep.equals(this.sep)) {
+            return this;
+        }
+        return new DataMapper<>(typeValues, sep);
+    }
+
     public ValuesJoiner<T> getJoiner() {
         if (joiner == null) {
-            joiner = new ValuesJoiner<>(typeData);
+            joiner = new ValuesJoiner<>(typeValues);
         }
         return joiner;
     }
 
     public ValuesConverter.Text<T> getConverter() {
         if (converter == null) {
-            converter = new ValuesConverter.Text<>(typeData);
+            converter = new ValuesConverter.Text<>(typeValues);
         }
         return converter;
     }

@@ -13,23 +13,23 @@ import java.util.Map;
 import java.util.function.*;
 import java.util.stream.Stream;
 
-import static com.github.wolray.line.io.TypeData.invoke;
+import static com.github.wolray.line.io.TypeValues.invoke;
 
 /**
  * @author ray
  */
 public class ValuesConverter<V, T> implements Function<V, T> {
-    protected final TypeData<T> typeData;
-    protected final TypeData.Attr[] attrs;
+    protected final TypeValues<T> typeValues;
+    protected final TypeValues.Attr[] attrs;
     private final ToIntFunction<V> sizeGetter;
     private final Constructor<T> constructor;
     private BiConsumer<T, V> filler;
 
-    public ValuesConverter(TypeData<T> typeData, ToIntFunction<V> sizeGetter) {
-        this.typeData = typeData;
+    public ValuesConverter(TypeValues<T> typeValues, ToIntFunction<V> sizeGetter) {
+        this.typeValues = typeValues;
         this.sizeGetter = sizeGetter;
-        attrs = typeData.toAttrs();
-        constructor = initConstructor(typeData.type);
+        attrs = typeValues.toAttrs();
+        constructor = initConstructor(typeValues.type);
         initParsers();
         filler = fillAll();
     }
@@ -69,7 +69,7 @@ public class ValuesConverter<V, T> implements Function<V, T> {
         parserMap.put(double.class, Double::parseDouble);
         parserMap.put(Double.class, Double::parseDouble);
 
-        for (TypeData.Attr data : attrs) {
+        for (TypeValues.Attr data : attrs) {
             Class<?> type = data.field.getType();
             if (type.isEnum()) {
                 data.parser = s -> parseEnum(type, s);
@@ -77,17 +77,17 @@ public class ValuesConverter<V, T> implements Function<V, T> {
                 data.parser = parserMap.get(type);
             }
         }
-        TypeData.processSimpleMethods(typeData.type, this::processMethod);
+        TypeValues.processSimpleMethods(typeValues.type, this::processMethod);
         checkParsers();
     }
 
-    void processMethod(TypeData.SimpleMethod simpleMethod) {
+    void processMethod(TypeValues.SimpleMethod simpleMethod) {
         Method method = simpleMethod.method;
         Class<?> returnType = simpleMethod.returnType;
         if (simpleMethod.paraType == String.class) {
             Fields fields = method.getAnnotation(Fields.class);
-            Predicate<Field> predicate = TypeData.makePredicate(fields);
-            Stream<TypeData.Attr> stream = Arrays.stream(attrs)
+            Predicate<Field> predicate = TypeValues.makePredicate(fields);
+            Stream<TypeValues.Attr> stream = Arrays.stream(attrs)
                 .filter(a -> predicate.test(a.field));
             method.setAccessible(true);
             if (returnType == String.class) {
@@ -103,18 +103,18 @@ public class ValuesConverter<V, T> implements Function<V, T> {
     }
 
     private void checkParsers() {
-        for (TypeData.Attr data : attrs) {
+        for (TypeValues.Attr data : attrs) {
             if (data.parser == null) {
                 String fmt = "cannot parse %s, please add a static method (String -> %s) inside %s";
                 String name = data.field.getType().getSimpleName();
-                throw new IllegalStateException(String.format(fmt, name, name, typeData.type.getSimpleName()));
+                throw new IllegalStateException(String.format(fmt, name, name, typeValues.type.getSimpleName()));
             }
             data.composeMapper();
         }
     }
 
     private BiConsumer<T, V> fillAll() {
-        TypeData.Attr[] data = attrs;
+        TypeValues.Attr[] data = attrs;
         int len = data.length;
         return (t, v) -> {
             int max = Math.min(len, sizeGetter.applyAsInt(v));
@@ -125,7 +125,7 @@ public class ValuesConverter<V, T> implements Function<V, T> {
     }
 
     private BiConsumer<T, V> fillBySlots(int[] slots) {
-        TypeData.Attr[] data = attrs;
+        TypeValues.Attr[] data = attrs;
         int len = Math.min(data.length, slots.length);
         return (t, v) -> {
             int max = Math.min(len, sizeGetter.applyAsInt(v));
@@ -135,11 +135,11 @@ public class ValuesConverter<V, T> implements Function<V, T> {
         };
     }
 
-    private void fillAt(T t, V values, int index, TypeData.Attr context) {
+    private void fillAt(T t, V values, int index, TypeValues.Attr context) {
         context.set(t, convertAt(values, index, context));
     }
 
-    protected Object convertAt(V values, int index, TypeData.Attr context) {
+    protected Object convertAt(V values, int index, TypeValues.Attr context) {
         throw new UnsupportedOperationException();
     }
 
@@ -155,12 +155,12 @@ public class ValuesConverter<V, T> implements Function<V, T> {
     }
 
     public static class Text<T> extends ValuesConverter<String[], T> {
-        public Text(TypeData<T> typeData) {
-            super(typeData, a -> a.length);
+        public Text(TypeValues<T> typeValues) {
+            super(typeValues, a -> a.length);
         }
 
         @Override
-        protected Object convertAt(String[] values, int index, TypeData.Attr context) {
+        protected Object convertAt(String[] values, int index, TypeValues.Attr context) {
             return context.parse(values[index]);
         }
 
@@ -170,8 +170,8 @@ public class ValuesConverter<V, T> implements Function<V, T> {
     }
 
     public static class Excel<T> extends ValuesConverter<Row, T> {
-        public Excel(TypeData<T> typeData) {
-            super(typeData, Row::getLastCellNum);
+        public Excel(TypeValues<T> typeValues) {
+            super(typeValues, Row::getLastCellNum);
             Map<Class<?>, Function<Cell, ?>> functionMap = new HashMap<>(9);
             functionMap.put(String.class, Cell::getStringCellValue);
             functionMap.put(boolean.class, Cell::getBooleanCellValue);
@@ -183,7 +183,7 @@ public class ValuesConverter<V, T> implements Function<V, T> {
             functionMap.put(double.class, Cell::getNumericCellValue);
             functionMap.put(Double.class, Cell::getNumericCellValue);
             DataFormatter df = new DataFormatter();
-            for (TypeData.Attr data : attrs) {
+            for (TypeValues.Attr data : attrs) {
                 Function<Cell, ?> function = functionMap.get(data.field.getType());
                 if (function != null) {
                     data.function = o -> function.apply((Cell)o);
@@ -194,7 +194,7 @@ public class ValuesConverter<V, T> implements Function<V, T> {
         }
 
         @Override
-        protected Object convertAt(Row row, int index, TypeData.Attr data) {
+        protected Object convertAt(Row row, int index, TypeValues.Attr data) {
             Cell cell = row.getCell(index);
             return data.convert(cell);
         }

@@ -7,37 +7,37 @@ import java.util.StringJoiner;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static com.github.wolray.line.io.TypeData.invoke;
+import static com.github.wolray.line.io.TypeValues.invoke;
 
 /**
  * @author ray
  */
 public class ValuesJoiner<T> {
-    private final TypeData<T> typeData;
-    private final TypeData.Attr[] attrs;
+    private final TypeValues<T> typeValues;
+    private final TypeValues.Attr[] attrs;
 
-    public ValuesJoiner(TypeData<T> typeData) {
-        this.typeData = typeData;
-        attrs = typeData.toAttrs();
+    public ValuesJoiner(TypeValues<T> typeValues) {
+        this.typeValues = typeValues;
+        attrs = typeValues.toAttrs();
         initFormatters();
     }
 
     private void initFormatters() {
         Function<Object, String> toString = Object::toString;
-        for (TypeData.Attr attr : attrs) {
+        for (TypeValues.Attr attr : attrs) {
             attr.formatter = toString;
         }
-        TypeData.processSimpleMethods(typeData.type, this::processMethod);
+        TypeValues.processSimpleMethods(typeValues.type, this::processMethod);
     }
 
-    void processMethod(TypeData.SimpleMethod simpleMethod) {
+    void processMethod(TypeValues.SimpleMethod simpleMethod) {
         Method method = simpleMethod.method;
         Class<?> paraType = simpleMethod.paraType;
         if (paraType != String.class && simpleMethod.returnType == String.class) {
             method.setAccessible(true);
             Function<Object, String> function = s -> (String)invoke(method, s);
             Fields fields = method.getAnnotation(Fields.class);
-            Predicate<Field> predicate = TypeData.makePredicate(fields);
+            Predicate<Field> predicate = TypeValues.makePredicate(fields);
             Arrays.stream(attrs)
                 .filter(a -> predicate.test(a.field))
                 .filter(a -> a.field.getType() == paraType)
@@ -45,9 +45,9 @@ public class ValuesJoiner<T> {
         }
     }
 
-    String join(String sep, Function<TypeData.Attr, String> function) {
+    String join(String sep, Function<TypeValues.Attr, String> function) {
         StringJoiner joiner = new StringJoiner(sep);
-        for (TypeData.Attr attr : attrs) {
+        for (TypeValues.Attr attr : attrs) {
             joiner.add(function.apply(attr));
         }
         return joiner.toString();

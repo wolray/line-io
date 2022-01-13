@@ -27,7 +27,7 @@ public class LineWriter<T> {
     }
 
     public static <T> LineWriter<T> byCsv(String sep, Class<T> type, boolean withHeader) {
-        ValuesJoiner<T> joiner = new ValuesJoiner<>(new TypeData<>(type));
+        ValuesJoiner<T> joiner = new ValuesJoiner<>(new TypeValues<>(type));
         LineWriter<T> res = new LineWriter<>(joiner.toFormatter(sep));
         if (withHeader) {
             res.header(joiner.join(sep, c -> c.field.getName()));
@@ -36,7 +36,7 @@ public class LineWriter<T> {
     }
 
     public static <T> LineWriter<T> byCsv(String sep, Class<T> type, String... columns) {
-        ValuesJoiner<T> joiner = new ValuesJoiner<>(new TypeData<>(type));
+        ValuesJoiner<T> joiner = new ValuesJoiner<>(new TypeValues<>(type));
         LineWriter<T> res = new LineWriter<>(joiner.toFormatter(sep));
         if (columns.length > 0) {
             res.header(String.join(sep, columns));

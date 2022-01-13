@@ -16,20 +16,20 @@ import java.util.stream.Stream;
 /**
  * @author ray
  */
-public class TypeData<T> {
+public class TypeValues<T> {
     public final Class<T> type;
-    public final Field[] array;
+    public final Field[] values;
 
-    public TypeData(Class<T> type) {
+    public TypeValues(Class<T> type) {
         this(type, type.getAnnotation(Fields.class));
     }
 
-    public TypeData(Class<T> type, Fields fields) {
+    public TypeValues(Class<T> type, Fields fields) {
         this.type = type;
         Stream<Field> stream = getFields(type, fields)
             .filter(f -> checkModifier(f.getModifiers()));
         Predicate<Field> predicate = makePredicate(fields);
-        array = stream.filter(predicate).toArray(Field[]::new);
+        values = stream.filter(predicate).toArray(Field[]::new);
     }
 
     private static boolean checkModifier(int modifier) {
@@ -77,7 +77,7 @@ public class TypeData<T> {
     }
 
     Attr[] toAttrs() {
-        return Arrays.stream(array).map(Attr::new).toArray(Attr[]::new);
+        return Arrays.stream(values).map(Attr::new).toArray(Attr[]::new);
     }
 
     private Stream<Field> getFields(Class<T> type, Fields fields) {

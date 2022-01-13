@@ -117,7 +117,7 @@ public class DataStream<T> {
     }
 
     public DataStream<T> cacheCsv(String file, Class<T> type, String sep) {
-        DataMapper<T> mapper = new DataMapper<>(new TypeData<>(type), sep);
+        DataMapper<T> mapper = new DataMapper<>(new TypeValues<>(type), sep);
         return cacheCsv(file, mapper);
     }
 
