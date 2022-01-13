@@ -33,7 +33,7 @@ public class DataMapper<T> {
                 if (Modifier.isStatic(f.getModifiers())) {
                     Class<?> type = f.getType();
                     if (type == DataMapper.class) {
-                        TypeValues<?> typeValues = initTypeData(f);
+                        TypeValues<?> typeValues = makeTypeValues(f);
                         f.setAccessible(true);
                         Object value = f.get(null);
                         if (value == null) {
@@ -47,7 +47,7 @@ public class DataMapper<T> {
         }
     }
 
-    private static TypeValues<?> initTypeData(Field f) {
+    private static TypeValues<?> makeTypeValues(Field f) {
         Type genericType = f.getGenericType();
         if (genericType instanceof ParameterizedType) {
             Type argument = ((ParameterizedType)genericType).getActualTypeArguments()[0];

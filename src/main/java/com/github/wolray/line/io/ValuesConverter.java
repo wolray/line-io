@@ -69,12 +69,12 @@ public class ValuesConverter<V, T> implements Function<V, T> {
         parserMap.put(double.class, Double::parseDouble);
         parserMap.put(Double.class, Double::parseDouble);
 
-        for (TypeValues.Attr data : attrs) {
-            Class<?> type = data.field.getType();
+        for (TypeValues.Attr attr : attrs) {
+            Class<?> type = attr.field.getType();
             if (type.isEnum()) {
-                data.parser = s -> parseEnum(type, s);
+                attr.parser = s -> parseEnum(type, s);
             } else {
-                data.parser = parserMap.get(type);
+                attr.parser = parserMap.get(type);
             }
         }
         TypeValues.processSimpleMethods(typeValues.type, this::processMethod);
@@ -103,34 +103,34 @@ public class ValuesConverter<V, T> implements Function<V, T> {
     }
 
     private void checkParsers() {
-        for (TypeValues.Attr data : attrs) {
-            if (data.parser == null) {
+        for (TypeValues.Attr attr : attrs) {
+            if (attr.parser == null) {
                 String fmt = "cannot parse %s, please add a static method (String -> %s) inside %s";
-                String name = data.field.getType().getSimpleName();
+                String name = attr.field.getType().getSimpleName();
                 throw new IllegalStateException(String.format(fmt, name, name, typeValues.type.getSimpleName()));
             }
-            data.composeMapper();
+            attr.composeMapper();
         }
     }
 
     private BiConsumer<T, V> fillAll() {
-        TypeValues.Attr[] data = attrs;
-        int len = data.length;
+        TypeValues.Attr[] attrs = this.attrs;
+        int len = attrs.length;
         return (t, v) -> {
             int max = Math.min(len, sizeGetter.applyAsInt(v));
             for (int i = 0; i < max; i++) {
-                fillAt(t, v, i, data[i]);
+                fillAt(t, v, i, attrs[i]);
             }
         };
     }
 
     private BiConsumer<T, V> fillBySlots(int[] slots) {
-        TypeValues.Attr[] data = attrs;
-        int len = Math.min(data.length, slots.length);
+        TypeValues.Attr[] attrs = this.attrs;
+        int len = Math.min(attrs.length, slots.length);
         return (t, v) -> {
             int max = Math.min(len, sizeGetter.applyAsInt(v));
             for (int i = 0; i < max; i++) {
-                fillAt(t, v, slots[i], data[i]);
+                fillAt(t, v, slots[i], attrs[i]);
             }
         };
     }
@@ -183,20 +183,20 @@ public class ValuesConverter<V, T> implements Function<V, T> {
             functionMap.put(double.class, Cell::getNumericCellValue);
             functionMap.put(Double.class, Cell::getNumericCellValue);
             DataFormatter df = new DataFormatter();
-            for (TypeValues.Attr data : attrs) {
-                Function<Cell, ?> function = functionMap.get(data.field.getType());
+            for (TypeValues.Attr attr : attrs) {
+                Function<Cell, ?> function = functionMap.get(attr.field.getType());
                 if (function != null) {
-                    data.function = o -> function.apply((Cell)o);
+                    attr.function = o -> function.apply((Cell)o);
                 } else {
-                    data.function = o -> data.parse(df.formatCellValue((Cell)o));
+                    attr.function = o -> attr.parse(df.formatCellValue((Cell)o));
                 }
             }
         }
 
         @Override
-        protected Object convertAt(Row row, int index, TypeValues.Attr data) {
+        protected Object convertAt(Row row, int index, TypeValues.Attr attr) {
             Cell cell = row.getCell(index);
-            return data.convert(cell);
+            return attr.convert(cell);
         }
     }
 }
