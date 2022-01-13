@@ -28,7 +28,7 @@ public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, 
         super(type);
         this.sizeGetter = sizeGetter;
         constructor = initConstructor(type);
-        initConverters();
+        initParsers();
         filler = fillAll();
     }
 
@@ -44,7 +44,7 @@ public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, 
         }
     }
 
-    private void initConverters() {
+    private void initParsers() {
         Map<Class<?>, Function<String, ?>> parserMap = new HashMap<>(11);
         parserMap.put(String.class, s -> s);
         parserMap.put(char.class, s -> s.charAt(0));

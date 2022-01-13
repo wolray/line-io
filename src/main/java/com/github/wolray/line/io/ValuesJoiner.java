@@ -10,17 +10,17 @@ import static com.github.wolray.line.io.TypeScanner.invoke;
 /**
  * @author ray
  */
-public class ValuesFormatter<T> extends ValuesBase<T> {
-    public ValuesFormatter(Class<T> type) {
+public class ValuesJoiner<T> extends ValuesBase<T> {
+    public ValuesJoiner(Class<T> type) {
         super(type);
         initFormatters();
     }
 
     private void initFormatters() {
         Function<Object, String> toString = Object::toString;
-        Map<Class<?>, Function<Object, String>> map = TypeScanner.getPrinterMap();
+        Map<Class<?>, Function<Object, String>> map = TypeScanner.getFormatterMap();
         for (FieldContext context : fieldContexts) {
-            context.printer = map.getOrDefault(context.field.getType(), toString);
+            context.formatter = map.getOrDefault(context.field.getType(), toString);
         }
         processStaticMethods();
     }
@@ -32,7 +32,7 @@ public class ValuesFormatter<T> extends ValuesBase<T> {
             Function<Object, String> function = s -> (String)invoke(method, s);
             filterFields(method.getAnnotation(Fields.class))
                 .filter(c -> c.field.getType() == paraType)
-                .forEach(c -> c.printer = function);
+                .forEach(c -> c.formatter = function);
         }
     }
 
@@ -44,7 +44,7 @@ public class ValuesFormatter<T> extends ValuesBase<T> {
         return joiner.toString();
     }
 
-    public Function<T, String> toPrinter(String sep) {
-        return t -> join(sep, c -> c.print(c.get(t)));
+    public Function<T, String> toFormatter(String sep) {
+        return t -> join(sep, c -> c.format(c.get(t)));
     }
 }

@@ -6,9 +6,9 @@ import java.util.function.Function;
  * @author wolray
  */
 public class DataMapper<T> {
-    private final ValuesFormatter<T> formatter;
+    private final ValuesJoiner<T> joiner;
     private final ValuesConverter.Text<T> converter;
-    private final Function<T, String> printer;
+    private final Function<T, String> formatter;
     private final Function<String, T> parser;
 
     public DataMapper(Class<T> type) {
@@ -16,18 +16,18 @@ public class DataMapper<T> {
     }
 
     public DataMapper(Class<T> type, String sep) {
-        formatter = new ValuesFormatter<>(type);
+        joiner = new ValuesJoiner<>(type);
         converter = new ValuesConverter.Text<>(type);
-        printer = toPrinter(sep);
+        formatter = toFormatter(sep);
         parser = toParser(sep);
     }
 
     public LineWriter<T> toWriter() {
-        return new LineWriter<>(printer);
+        return new LineWriter<>(formatter);
     }
 
     public LineWriter<T> toWriter(String sep) {
-        return new LineWriter<>(toPrinter(sep));
+        return new LineWriter<>(toFormatter(sep));
     }
 
     public LineReader.Text<T> toReader() {
@@ -38,8 +38,8 @@ public class DataMapper<T> {
         return new CsvReader<>(converter, sep);
     }
 
-    public Function<T, String> toPrinter(String sep) {
-        return formatter.toPrinter(sep);
+    public Function<T, String> toFormatter(String sep) {
+        return joiner.toFormatter(sep);
     }
 
     public Function<String, T> toParser(String sep) {
@@ -47,7 +47,7 @@ public class DataMapper<T> {
     }
 
     public String format(T t) {
-        return printer.apply(t);
+        return formatter.apply(t);
     }
 
     public T parse(String str) {

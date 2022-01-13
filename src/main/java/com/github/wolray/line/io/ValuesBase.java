@@ -83,7 +83,7 @@ class ValuesBase<T> {
         UnaryOperator<String> mapper;
         Function<String, ?> parser;
         Function<Object, ?> function;
-        Function<Object, String> printer;
+        Function<Object, String> formatter;
 
         FieldContext(Field field) {
             this.field = field;
@@ -111,8 +111,8 @@ class ValuesBase<T> {
             }
         }
 
-        String print(Object o) {
-            return o != null ? printer.apply(o) : "";
+        String format(Object o) {
+            return o != null ? formatter.apply(o) : "";
         }
 
         Object get(Object t) {

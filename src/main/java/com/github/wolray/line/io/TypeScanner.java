@@ -13,7 +13,7 @@ import java.util.function.Supplier;
 public class TypeScanner {
     private static boolean hasTypeFields = false;
     private static boolean hasParser = false;
-    private static boolean hasPrinter = false;
+    private static boolean hasFormatter = false;
 
     public static synchronized void scan(Class<?> clazz) {
         Map<Class<?>, Object> scanMap = ScanMap.INSTANCE;
@@ -55,8 +55,8 @@ public class TypeScanner {
                 hasParser = true;
             } else if (returnType == String.class) {
                 method.setAccessible(true);
-                PrinterMap.INSTANCE.put(parameterType, o -> (String)invoke(method, o));
-                hasPrinter = true;
+                FormatterMap.INSTANCE.put(parameterType, o -> (String)invoke(method, o));
+                hasFormatter = true;
             }
         }
     }
@@ -115,8 +115,8 @@ public class TypeScanner {
         return hasParser ? ParserMap.INSTANCE : Collections.emptyMap();
     }
 
-    static Map<Class<?>, Function<Object, String>> getPrinterMap() {
-        return hasPrinter ? PrinterMap.INSTANCE : Collections.emptyMap();
+    static Map<Class<?>, Function<Object, String>> getFormatterMap() {
+        return hasFormatter ? FormatterMap.INSTANCE : Collections.emptyMap();
     }
 
     static Object invoke(Method method, Object o) {
@@ -143,7 +143,7 @@ public class TypeScanner {
         private static final Map<Class<?>, Function<String, ?>> INSTANCE = new ConcurrentHashMap<>();
     }
 
-    private static class PrinterMap {
+    private static class FormatterMap {
         private static final Map<Class<?>, Function<Object, String>> INSTANCE = new ConcurrentHashMap<>();
     }
 }
