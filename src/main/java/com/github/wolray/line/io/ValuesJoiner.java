@@ -1,45 +1,54 @@
 package com.github.wolray.line.io;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.util.Map;
+import java.util.Arrays;
 import java.util.StringJoiner;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
-import static com.github.wolray.line.io.TypeScanner.invoke;
+import static com.github.wolray.line.io.TypeData.invoke;
 
 /**
  * @author ray
  */
-public class ValuesJoiner<T> extends ValuesBase<T> {
-    public ValuesJoiner(Class<T> type) {
-        super(type);
+public class ValuesJoiner<T> {
+    private final TypeData<T> typeData;
+    private final TypeData.Attr[] attrs;
+
+    public ValuesJoiner(TypeData<T> typeData) {
+        this.typeData = typeData;
+        attrs = typeData.toAttrs();
         initFormatters();
     }
 
     private void initFormatters() {
         Function<Object, String> toString = Object::toString;
-        Map<Class<?>, Function<Object, String>> map = TypeScanner.getFormatterMap();
-        for (FieldContext context : fieldContexts) {
-            context.formatter = map.getOrDefault(context.field.getType(), toString);
+        for (TypeData.Attr attr : attrs) {
+            attr.formatter = toString;
         }
-        processStaticMethods();
+        TypeData.processSimpleMethods(typeData.type, this::processMethod);
     }
 
-    @Override
-    void processMethod(Method method, Class<?> paraType, Class<?> returnType) {
-        if (paraType != String.class && returnType == String.class) {
+    void processMethod(TypeData.SimpleMethod simpleMethod) {
+        Method method = simpleMethod.method;
+        Class<?> paraType = simpleMethod.paraType;
+        if (paraType != String.class && simpleMethod.returnType == String.class) {
             method.setAccessible(true);
             Function<Object, String> function = s -> (String)invoke(method, s);
-            filterFields(method.getAnnotation(Fields.class))
-                .filter(c -> c.field.getType() == paraType)
+            Fields fields = method.getAnnotation(Fields.class);
+            Predicate<Field> predicate = TypeData.makePredicate(fields);
+            Arrays.stream(attrs)
+                .filter(a -> predicate.test(a.field))
+                .filter(a -> a.field.getType() == paraType)
                 .forEach(c -> c.formatter = function);
         }
     }
 
-    String join(String sep, Function<FieldContext, String> function) {
+    String join(String sep, Function<TypeData.Attr, String> function) {
         StringJoiner joiner = new StringJoiner(sep);
-        for (FieldContext context : fieldContexts) {
-            joiner.add(function.apply(context));
+        for (TypeData.Attr attr : attrs) {
+            joiner.add(function.apply(attr));
         }
         return joiner.toString();
     }

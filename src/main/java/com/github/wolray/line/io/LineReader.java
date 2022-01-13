@@ -29,7 +29,7 @@ public class LineReader<S, V, T> {
     }
 
     public static <T> CsvReader<T> byCsv(String sep, Class<T> type) {
-        return new CsvReader<>(new ValuesConverter.Text<>(type), sep);
+        return new CsvReader<>(new ValuesConverter.Text<>(new TypeData<>(type)), sep);
     }
 
     public static <T> Excel<T> byExcel(Class<T> type) {
@@ -37,7 +37,7 @@ public class LineReader<S, V, T> {
     }
 
     public static <T> Excel<T> byExcel(int sheetIndex, Class<T> type) {
-        return new Excel<>(sheetIndex, new ValuesConverter.Excel<>(type));
+        return new Excel<>(sheetIndex, new ValuesConverter.Excel<>(new TypeData<>(type)));
     }
 
     public static InputStream toInputStream(String file) {

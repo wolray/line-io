@@ -5,31 +5,42 @@ import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.BiConsumer;
-import java.util.function.Function;
-import java.util.function.ToIntFunction;
-import java.util.function.UnaryOperator;
+import java.util.function.*;
 import java.util.stream.Stream;
 
-import static com.github.wolray.line.io.TypeScanner.invoke;
+import static com.github.wolray.line.io.TypeData.invoke;
 
 /**
  * @author ray
  */
-public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, T> {
+public class ValuesConverter<V, T> implements Function<V, T> {
+    protected final TypeData<T> typeData;
+    protected final TypeData.Attr[] attrs;
     private final ToIntFunction<V> sizeGetter;
     private final Constructor<T> constructor;
     private BiConsumer<T, V> filler;
 
-    public ValuesConverter(Class<T> type, ToIntFunction<V> sizeGetter) {
-        super(type);
+    public ValuesConverter(TypeData<T> typeData, ToIntFunction<V> sizeGetter) {
+        this.typeData = typeData;
         this.sizeGetter = sizeGetter;
-        constructor = initConstructor(type);
+        attrs = typeData.toAttrs();
+        constructor = initConstructor(typeData.type);
         initParsers();
         filler = fillAll();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T extends Enum<T>> T parseEnum(Class<?> type, String s) {
+        try {
+            return Enum.valueOf((Class<T>)type, s);
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     public void resetOrder(int[] slots) {
@@ -57,25 +68,34 @@ public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, 
         parserMap.put(Long.class, Long::parseLong);
         parserMap.put(double.class, Double::parseDouble);
         parserMap.put(Double.class, Double::parseDouble);
-        parserMap.putAll(TypeScanner.getParserMap());
-        for (FieldContext context : fieldContexts) {
-            context.parser = parserMap.get(context.field.getType());
+
+        for (TypeData.Attr data : attrs) {
+            Class<?> type = data.field.getType();
+            if (type.isEnum()) {
+                data.parser = s -> parseEnum(type, s);
+            } else {
+                data.parser = parserMap.get(type);
+            }
         }
-        processStaticMethods();
+        TypeData.processSimpleMethods(typeData.type, this::processMethod);
         checkParsers();
     }
 
-    @Override
-    void processMethod(Method method, Class<?> paraType, Class<?> returnType) {
-        if (paraType == String.class) {
-            Stream<FieldContext> fields = filterFields(method.getAnnotation(Fields.class));
+    void processMethod(TypeData.SimpleMethod simpleMethod) {
+        Method method = simpleMethod.method;
+        Class<?> returnType = simpleMethod.returnType;
+        if (simpleMethod.paraType == String.class) {
+            Fields fields = method.getAnnotation(Fields.class);
+            Predicate<Field> predicate = TypeData.makePredicate(fields);
+            Stream<TypeData.Attr> stream = Arrays.stream(attrs)
+                .filter(a -> predicate.test(a.field));
             method.setAccessible(true);
             if (returnType == String.class) {
                 UnaryOperator<String> mapper = s -> (String)invoke(method, s);
-                fields.forEach(c -> c.mapper = mapper);
+                stream.forEach(c -> c.mapper = mapper);
             } else {
                 Function<String, Object> parser = s -> invoke(method, s);
-                fields
+                stream
                     .filter(c -> c.field.getType() == returnType)
                     .forEach(c -> c.parser = parser);
             }
@@ -83,41 +103,43 @@ public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, 
     }
 
     private void checkParsers() {
-        for (FieldContext context : fieldContexts) {
-            if (context.parser == null) {
-                String fmt = "cannot parse %s\n\tplease add a static method (String -> %s) in %s or its parent classes";
-                String name = context.field.getType().getSimpleName();
-                throw new IllegalStateException(String.format(fmt, name, name, type.getSimpleName()));
+        for (TypeData.Attr data : attrs) {
+            if (data.parser == null) {
+                String fmt = "cannot parse %s, please add a static method (String -> %s) inside %s";
+                String name = data.field.getType().getSimpleName();
+                throw new IllegalStateException(String.format(fmt, name, name, typeData.type.getSimpleName()));
             }
-            context.composeMapper();
+            data.composeMapper();
         }
     }
 
     private BiConsumer<T, V> fillAll() {
-        int len = fieldContexts.length;
+        TypeData.Attr[] data = attrs;
+        int len = data.length;
         return (t, v) -> {
             int max = Math.min(len, sizeGetter.applyAsInt(v));
             for (int i = 0; i < max; i++) {
-                fillAt(t, v, i, fieldContexts[i]);
+                fillAt(t, v, i, data[i]);
             }
         };
     }
 
     private BiConsumer<T, V> fillBySlots(int[] slots) {
-        int len = Math.min(fieldContexts.length, slots.length);
+        TypeData.Attr[] data = attrs;
+        int len = Math.min(data.length, slots.length);
         return (t, v) -> {
             int max = Math.min(len, sizeGetter.applyAsInt(v));
             for (int i = 0; i < max; i++) {
-                fillAt(t, v, slots[i], fieldContexts[i]);
+                fillAt(t, v, slots[i], data[i]);
             }
         };
     }
 
-    private void fillAt(T t, V values, int index, FieldContext context) {
+    private void fillAt(T t, V values, int index, TypeData.Attr context) {
         context.set(t, convertAt(values, index, context));
     }
 
-    protected Object convertAt(V values, int index, FieldContext context) {
+    protected Object convertAt(V values, int index, TypeData.Attr context) {
         throw new UnsupportedOperationException();
     }
 
@@ -133,12 +155,12 @@ public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, 
     }
 
     public static class Text<T> extends ValuesConverter<String[], T> {
-        public Text(Class<T> type) {
-            super(type, a -> a.length);
+        public Text(TypeData<T> typeData) {
+            super(typeData, a -> a.length);
         }
 
         @Override
-        protected Object convertAt(String[] values, int index, FieldContext context) {
+        protected Object convertAt(String[] values, int index, TypeData.Attr context) {
             return context.parse(values[index]);
         }
 
@@ -148,8 +170,8 @@ public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, 
     }
 
     public static class Excel<T> extends ValuesConverter<Row, T> {
-        public Excel(Class<T> type) {
-            super(type, Row::getLastCellNum);
+        public Excel(TypeData<T> typeData) {
+            super(typeData, Row::getLastCellNum);
             Map<Class<?>, Function<Cell, ?>> functionMap = new HashMap<>(9);
             functionMap.put(String.class, Cell::getStringCellValue);
             functionMap.put(boolean.class, Cell::getBooleanCellValue);
@@ -161,20 +183,20 @@ public class ValuesConverter<V, T> extends ValuesBase<T> implements Function<V, 
             functionMap.put(double.class, Cell::getNumericCellValue);
             functionMap.put(Double.class, Cell::getNumericCellValue);
             DataFormatter df = new DataFormatter();
-            for (FieldContext context : fieldContexts) {
-                Function<Cell, ?> function = functionMap.get(context.field.getType());
+            for (TypeData.Attr data : attrs) {
+                Function<Cell, ?> function = functionMap.get(data.field.getType());
                 if (function != null) {
-                    context.function = o -> function.apply((Cell)o);
+                    data.function = o -> function.apply((Cell)o);
                 } else {
-                    context.function = o -> context.parse(df.formatCellValue((Cell)o));
+                    data.function = o -> data.parse(df.formatCellValue((Cell)o));
                 }
             }
         }
 
         @Override
-        protected Object convertAt(Row row, int index, FieldContext context) {
+        protected Object convertAt(Row row, int index, TypeData.Attr data) {
             Cell cell = row.getCell(index);
-            return context.convert(cell);
+            return data.convert(cell);
         }
     }
 }
