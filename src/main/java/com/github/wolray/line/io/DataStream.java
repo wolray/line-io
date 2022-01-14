@@ -15,7 +15,7 @@ public class DataStream<T> {
     private Supplier<Stream<T>> supplier;
 
     private DataStream(List<T> ts) {
-        set(ts);
+        setList(ts);
     }
 
     private DataStream(Supplier<Stream<T>> supplier) {
@@ -38,13 +38,20 @@ public class DataStream<T> {
         return of(Stream::empty);
     }
 
-    private void set(List<T> list) {
+    private void setList(List<T> list) {
         ts = list;
         supplier = list::stream;
     }
 
     public boolean isReusable() {
         return ts != null;
+    }
+
+    public DataStream<T> reuse() {
+        if (!isReusable()) {
+            setList(supplier.get().collect(Collectors.toCollection(DataList::new)));
+        }
+        return this;
     }
 
     private DataStream<T> mod(UnaryOperator<Stream<T>> op) {
@@ -69,16 +76,16 @@ public class DataStream<T> {
         return mod(s -> s.filter(predicate));
     }
 
-    public <E> DataStream<E> map(Function<T, E> mapper) {
-        Supplier<Stream<T>> old = supplier;
-        return of(() -> old.get().map(mapper));
-    }
-
-    public DataStream<T> reuse() {
-        if (!isReusable()) {
-            set(supplier.get().collect(Collectors.toCollection(DataList::new)));
+    public DataStream<T> consumeIf(boolean condition, Consumer<DataStream<T>> consumer) {
+        if (condition) {
+            consumer.accept(this);
+            return isReusable() ? this : empty();
         }
         return this;
+    }
+
+    public DataStream<T> operateIf(boolean condition, UnaryOperator<DataStream<T>> op) {
+        return condition ? op.apply(this) : this;
     }
 
     public DataStream<T> cacheBy(Cache<T> cache) {
@@ -132,6 +139,16 @@ public class DataStream<T> {
         return cacheFile(file, ".txt",
             () -> LineReader.byJson(type),
             LineWriter::byJson);
+    }
+
+    public <E> DataStream<E> map(Function<T, E> mapper) {
+        Supplier<Stream<T>> old = supplier;
+        return of(() -> old.get().map(mapper));
+    }
+
+    public DataStream<T> parallelThen(Consumer<T> action) {
+        toList().parallelStream().forEach(action);
+        return this;
     }
 
     public void forEach(Consumer<T> action) {
