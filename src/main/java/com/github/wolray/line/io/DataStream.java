@@ -85,7 +85,10 @@ public class DataStream<T> {
         if (cache.exists()) {
             return cache.getReader().get();
         } else {
-            cache.getWriter().accept(toList());
+            List<T> ts = toList();
+            if (!ts.isEmpty()) {
+                cache.getWriter().accept(ts);
+            }
             return this;
         }
     }
