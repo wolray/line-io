@@ -135,11 +135,11 @@ public class ValuesConverter<V, T> implements Function<V, T> {
         };
     }
 
-    private void fillAt(T t, V values, int index, TypeValues.Attr context) {
-        context.set(t, convertAt(values, index, context));
+    private void fillAt(T t, V values, int index, TypeValues.Attr attr) {
+        attr.set(t, convertAt(values, index, attr));
     }
 
-    protected Object convertAt(V values, int index, TypeValues.Attr context) {
+    protected Object convertAt(V values, int index, TypeValues.Attr attr) {
         throw new UnsupportedOperationException();
     }
 
@@ -160,8 +160,8 @@ public class ValuesConverter<V, T> implements Function<V, T> {
         }
 
         @Override
-        protected Object convertAt(String[] values, int index, TypeValues.Attr context) {
-            return context.parse(values[index]);
+        protected Object convertAt(String[] values, int index, TypeValues.Attr attr) {
+            return attr.parse(values[index]);
         }
 
         public Function<String, T> toParser(String sep) {

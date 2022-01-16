@@ -90,11 +90,11 @@ public class DataStream<T> {
 
     public DataStream<T> cacheBy(Cache<T> cache) {
         if (cache.exists()) {
-            return cache.getReader().get();
+            return cache.read();
         } else {
             List<T> ts = toList();
             if (!ts.isEmpty()) {
-                cache.getWriter().accept(ts);
+                cache.write(ts);
             }
             return this;
         }
@@ -111,13 +111,13 @@ public class DataStream<T> {
             }
 
             @Override
-            public Supplier<DataStream<T>> getReader() {
-                return reader.get().read(is)::stream;
+            public DataStream<T> read() {
+                return reader.get().read(is).stream();
             }
 
             @Override
-            public Consumer<List<T>> getWriter() {
-                return ts -> writer.get().writeAsync(ts, f);
+            public void write(List<T> ts) {
+                writer.get().writeAsync(ts, f);
             }
         });
     }
@@ -189,8 +189,8 @@ public class DataStream<T> {
     public interface Cache<T> {
         boolean exists();
 
-        Supplier<DataStream<T>> getReader();
+        DataStream<T> read();
 
-        Consumer<List<T>> getWriter();
+        void write(List<T> ts);
     }
 }
