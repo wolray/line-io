@@ -11,9 +11,12 @@ import java.util.stream.Stream
 /**
  * @author wolray
  */
-open class LineReader<S, V, T> protected constructor(val function: Function<V, T>) {
-    @JvmOverloads
-    open fun read(source: S, skipLines: Int = 0): Session {
+open class LineReader<S, V, T> protected constructor(protected val function: Function<V, T>) {
+    open fun read(source: S): Session {
+        return Session(source, 0)
+    }
+
+    open fun read(source: S, skipLines: Int): Session {
         return Session(source, skipLines)
     }
 

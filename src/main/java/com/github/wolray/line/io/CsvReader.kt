@@ -10,12 +10,16 @@ class CsvReader<T> internal constructor(
         private val converter: ValuesConverter.Text<T>,
         private val sep: String) : LineReader.Text<T>(converter.toParser(sep)) {
 
-    override fun reorder(slots: IntArray) {
-        converter.resetOrder(slots)
+    override fun read(source: InputStream): Session {
+        return read(source, 0)
     }
 
     override fun read(source: InputStream, skipLines: Int): Session {
         return Session(source, skipLines)
+    }
+
+    override fun reorder(slots: IntArray) {
+        converter.resetOrder(slots)
     }
 
     private fun setHeader(firstRow: String, header: Array<String>) {
