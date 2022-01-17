@@ -106,7 +106,7 @@ class DataStream<T> {
             }
 
             override fun write(ts: List<T>) {
-                writer.invoke().writeAsync(ts, f)
+                writer.invoke().write(ts, f)
             }
         })
     }
@@ -118,7 +118,7 @@ class DataStream<T> {
     }
 
     fun cacheCsv(file: String, mapper: DataMapper<T>): DataStream<T> {
-        return cacheFile(file, ".csv", mapper::toReader, mapper::toWriter)
+        return cacheFile(file, ".csv", { mapper.toReader() }, { mapper.toWriter() })
     }
 
     fun cacheJson(file: String, type: Class<T>): DataStream<T> {
