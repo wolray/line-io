@@ -2,7 +2,6 @@ package com.github.wolray.line.io
 
 import com.github.wolray.line.io.LineReader.Companion.byJson
 import com.github.wolray.line.io.LineReader.Companion.toInputStream
-import java.lang.AssertionError
 import java.util.function.*
 import java.util.function.Function
 import java.util.stream.Collector
@@ -51,12 +50,17 @@ class DataStream<T> {
         }
     }
 
-    fun limit(maxSize: Int): DataStream<T> {
-        return mod { s: Stream<T> -> s.limit(maxSize.toLong()) }
-    }
-
     fun peek(action: Consumer<T>): DataStream<T> {
         return mod { s: Stream<T> -> s.peek(action) }
+    }
+
+    fun parallelPeek(action: Consumer<T>): DataStream<T> {
+        toList().parallelStream().forEach(action)
+        return this
+    }
+
+    fun limit(maxSize: Int): DataStream<T> {
+        return mod { s: Stream<T> -> s.limit(maxSize.toLong()) }
     }
 
     fun filter(predicate: Predicate<T>): DataStream<T> {
@@ -124,11 +128,6 @@ class DataStream<T> {
     fun <E> map(mapper: Function<T, E>): DataStream<E> {
         val old = supplier
         return of { old!!.get().map(mapper) }
-    }
-
-    fun parallelThen(action: Consumer<T>): DataStream<T> {
-        toList().parallelStream().forEach(action)
-        return this
     }
 
     fun forEach(action: Consumer<T>) {

@@ -38,7 +38,7 @@ class CsvReader<T> internal constructor(
         private var cols: Array<String>? = null
 
         fun csvHeader(vararg cols: String): Session {
-            this.cols = cols.toList().toTypedArray()
+            this.cols = arrayOf(*cols)
             return this
         }
 
