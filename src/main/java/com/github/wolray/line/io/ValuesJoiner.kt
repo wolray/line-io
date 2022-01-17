@@ -41,7 +41,7 @@ public class ValuesJoiner<T> {
             Arrays.stream(attrs)
                 .filter(a -> predicate.test(a.field))
                 .filter(a -> a.field.getType() == paraType)
-                .forEach(c -> c.formatter = function);
+                .forEach(a -> a.formatter = function);
         }
     }
 
@@ -54,6 +54,6 @@ public class ValuesJoiner<T> {
     }
 
     public Function<T, String> toFormatter(String sep) {
-        return t -> join(sep, c -> c.format(c.get(t)));
+        return t -> join(sep, a -> a.format(a.get(t)));
     }
 }
