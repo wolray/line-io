@@ -8,36 +8,24 @@ import java.util.function.Function
 /**
  * @author wolray
  */
-class DataMapper<T> @JvmOverloads constructor(val typeValues: TypeValues<T>, val sep: String = "\u02cc") {
-    private var joiner: ValuesJoiner<T>? = null
-    private var converter: ValuesConverter.Text<T>? = null
-    private var formatter: Function<T, String>? = null
-    private var parser: Function<String, T>? = null
+class DataMapper<T> @JvmOverloads constructor(
+        val typeValues: TypeValues<T>,
+        val sep: String = "\u02cc") {
+    val joiner: ValuesJoiner<T> by lazy { ValuesJoiner(typeValues) }
+    val converter: ValuesConverter.Text<T> by lazy { ValuesConverter.Text(typeValues) }
+    val formatter: Function<T, String> by lazy { toFormatter(sep) }
+    val parser: Function<String, T> by lazy { toParser(sep) }
 
     fun newSep(sep: String): DataMapper<T> {
         return if (sep == this.sep) this else DataMapper(typeValues, sep)
     }
 
-    fun getJoiner(): ValuesJoiner<T> {
-        if (joiner == null) {
-            joiner = ValuesJoiner(typeValues)
-        }
-        return joiner!!
-    }
-
-    fun getConverter(): ValuesConverter.Text<T> {
-        if (converter == null) {
-            converter = ValuesConverter.Text(typeValues)
-        }
-        return converter!!
-    }
-
     fun toFormatter(sep: String): Function<T, String> {
-        return getJoiner().toFormatter(sep)
+        return joiner.toFormatter(sep)
     }
 
     fun toParser(sep: String): Function<String, T> {
-        return getConverter().toParser(sep)
+        return converter.toParser(sep)
     }
 
     @JvmOverloads
@@ -47,31 +35,15 @@ class DataMapper<T> @JvmOverloads constructor(val typeValues: TypeValues<T>, val
 
     @JvmOverloads
     fun toReader(sep: String = this.sep): CsvReader<T> {
-        return CsvReader(getConverter(), sep)
+        return CsvReader(converter, sep)
     }
 
     fun format(t: T): String {
-        return try {
-            formatter!!.apply(t)
-        } catch (e: NullPointerException) {
-            if (formatter != null) {
-                throw e
-            }
-            formatter = toFormatter(sep)
-            formatter!!.apply(t)
-        }
+        return formatter.apply(t)
     }
 
     fun parse(s: String): T {
-        return try {
-            parser!!.apply(s)
-        } catch (e: NullPointerException) {
-            if (parser != null) {
-                throw e
-            }
-            parser = toParser(sep)
-            parser!!.apply(s)
-        }
+        return parser.apply(s)
     }
 
     companion object {
@@ -79,7 +51,7 @@ class DataMapper<T> @JvmOverloads constructor(val typeValues: TypeValues<T>, val
         @Synchronized
         fun scan(clazz: Class<*>) {
             try {
-                clazz.declaredFields
+                clazz.declaredFields.asSequence()
                         .filter {
                             Modifier.isStatic(it.modifiers)
                                     && it.type == DataMapper::class.java

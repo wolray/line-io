@@ -60,16 +60,16 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
             return this
         }
 
-        fun columns(excelCols: String?): Session {
-            slots = if (excelCols.isNullOrEmpty()) {
+        fun columns(excelCols: String): Session {
+            slots = if (excelCols.isEmpty()) {
                 IntArray(0)
             } else {
                 val a = 'A'
                 excelCols.split(",".toRegex())
-                        .map { it.trim() }
                         .map {
-                            val j = it[0] - a
-                            if (it.length > 1) (j + 1) * 26 + it[1].code - a.code else j
+                            val col = it.trim()
+                            val j = col[0] - a
+                            if (col.length > 1) (j + 1) * 26 + col[1].code - a.code else j
                         }
                         .toIntArray()
             }
