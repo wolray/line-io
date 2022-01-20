@@ -10,7 +10,7 @@ import java.util.function.Predicate;
 import static com.github.wolray.line.io.TypeValues.invoke;
 
 /**
- * @author ray
+ * @author wolray
  */
 public class ValuesJoiner<T> {
     private final TypeValues<T> typeValues;

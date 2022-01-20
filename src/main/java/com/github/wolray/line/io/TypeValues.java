@@ -14,7 +14,7 @@ import java.util.function.UnaryOperator;
 import java.util.stream.Stream;
 
 /**
- * @author ray
+ * @author wolray
  */
 public class TypeValues<T> {
     public final Class<T> type;

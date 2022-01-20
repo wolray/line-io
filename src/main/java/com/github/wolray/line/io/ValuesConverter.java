@@ -16,7 +16,7 @@ import java.util.stream.Stream;
 import static com.github.wolray.line.io.TypeValues.invoke;
 
 /**
- * @author ray
+ * @author wolray
  */
 public class ValuesConverter<V, T> implements Function<V, T> {
     protected final TypeValues<T> typeValues;

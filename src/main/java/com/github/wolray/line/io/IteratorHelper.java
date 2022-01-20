@@ -13,7 +13,7 @@ import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 /**
- * @author ray
+ * @author wolray
  */
 public class IteratorHelper {
     public static <T> Stream<T> toStream(Iterator<T> iterator, Long size) {

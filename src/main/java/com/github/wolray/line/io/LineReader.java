@@ -11,7 +11,7 @@ import java.util.Iterator;
 import java.util.function.Function;
 
 /**
- * @author ray
+ * @author wolray
  */
 public class LineReader<S, V, T> {
     protected final Function<V, T> function;

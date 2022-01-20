@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 /**
- * @author ray
+ * @author wolray
  */
 public class CsvReader<T> extends LineReader.Text<T> {
     private final ValuesConverter.Text<T> converter;

@@ -10,7 +10,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
 /**
- * @author ray
+ * @author wolray
  */
 public class LineWriter<T> {
     private final Function<T, String> formatter;

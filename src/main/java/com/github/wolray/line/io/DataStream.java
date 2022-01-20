@@ -8,7 +8,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * @author ray
+ * @author wolray
  */
 public class DataStream<T> {
     private List<T> ts;

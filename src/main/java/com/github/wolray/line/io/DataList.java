@@ -4,7 +4,7 @@ import java.util.AbstractList;
 import java.util.Iterator;
 
 /**
- * @author ray
+ * @author wolray
  */
 public class DataList<T> extends AbstractList<T> {
     private transient final Node<T> dummy = new Node<>();
