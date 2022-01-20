@@ -38,7 +38,7 @@ public class DemoTest {
             .filter(p -> p.age >= 18)
             // cache these persons into another csv file
             // next time when running the code the stream will be collected from the cached file
-            .cacheCsv(",", Person.class, "some-path/person_18.csv")
+            .cacheCsv("some-path/person_18.csv", Person.class, ",")
             // collect a singly-linked list rather than an ArrayList or LinkedList for better memory efficiency
             .toList();
 
