@@ -54,7 +54,7 @@ open class ValuesConverter<V, T>(
                 parserMap[type]
             }
         }
-        TypeValues.processSimpleMethods(typeValues.type) { processMethod(it) }
+        TypeValues.processSimpleMethods(typeValues.type, this::processMethod)
         checkParsers()
     }
 

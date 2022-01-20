@@ -136,7 +136,8 @@ class DataStream<T> {
 
     fun <E> map(mapper: Function<T, E>): DataStream<E> {
         val old = supplier
-        return DataStream { old!!.invoke().map { mapper.apply(it) } }
+        val f = mapper::apply
+        return DataStream { old!!.invoke().map(f) }
     }
 
     fun forEach(action: Consumer<T>) {

@@ -91,7 +91,8 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
                     iterator.next()
                 }
                 prepare(iterator)
-                iterator.asSequence().map { function.apply(it) }
+                val m = function::apply
+                iterator.asSequence().map(m)
             }
         }
     }
