@@ -51,7 +51,7 @@ class DataStream<T> {
     }
 
     fun peek(action: Consumer<T>): DataStream<T> {
-        return mod { s: Stream<T> -> s.peek(action) }
+        return mod { s -> s.peek(action) }
     }
 
     fun parallelPeek(action: Consumer<T>): DataStream<T> {
@@ -60,11 +60,11 @@ class DataStream<T> {
     }
 
     fun limit(maxSize: Int): DataStream<T> {
-        return mod { s: Stream<T> -> s.limit(maxSize.toLong()) }
+        return mod { s -> s.limit(maxSize.toLong()) }
     }
 
     fun filter(predicate: Predicate<T>): DataStream<T> {
-        return mod { s: Stream<T> -> s.filter(predicate) }
+        return mod { s -> s.filter(predicate) }
     }
 
     fun consumeIf(condition: Boolean, consumer: Consumer<DataStream<T>>): DataStream<T> {
@@ -91,9 +91,11 @@ class DataStream<T> {
         }
     }
 
-    private fun cacheFile(file: String, suffix: String,
-                          reader: () -> LineReader.Text<T>,
-                          writer: () -> LineWriter<T>): DataStream<T> {
+    private fun cacheFile(
+        file: String, suffix: String,
+        reader: () -> LineReader.Text<T>,
+        writer: () -> LineWriter<T>
+    ): DataStream<T> {
         val f = if (file.endsWith(suffix)) file else file + suffix
         val input = toInputStream(f)
         return cacheBy(object : Cache<T> {

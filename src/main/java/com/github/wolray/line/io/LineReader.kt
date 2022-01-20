@@ -34,7 +34,8 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
         }
     }
 
-    class Excel<T> internal constructor(private val sheetIndex: Int, converter: ValuesConverter.Excel<T>) : LineReader<InputStream, Row, T>(converter) {
+    class Excel<T> internal constructor(private val sheetIndex: Int, converter: ValuesConverter.Excel<T>) :
+        LineReader<InputStream, Row, T>(converter) {
         override fun toStream(source: InputStream): Stream<Row> {
             return try {
                 val workbook: Workbook = XSSFWorkbook(source)
@@ -51,8 +52,9 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
     }
 
     open inner class Session(
-            private val source: S,
-            private val skipLines: Int) {
+        private val source: S,
+        private val skipLines: Int
+    ) {
         private var slots: IntArray? = null
 
         fun columns(vararg slots: Int): Session {
@@ -66,12 +68,12 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
             } else {
                 val a = 'A'
                 excelCols.split(",".toRegex())
-                        .map {
-                            val col = it.trim()
-                            val j = col[0] - a
-                            if (col.length > 1) (j + 1) * 26 + col[1].code - a.code else j
-                        }
-                        .toIntArray()
+                    .map {
+                        val col = it.trim()
+                        val j = col[0] - a
+                        if (col.length > 1) (j + 1) * 26 + col[1].code - a.code else j
+                    }
+                    .toIntArray()
             }
             return this
         }

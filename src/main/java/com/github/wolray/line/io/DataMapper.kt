@@ -9,8 +9,9 @@ import java.util.function.Function
  * @author wolray
  */
 class DataMapper<T> @JvmOverloads constructor(
-        val typeValues: TypeValues<T>,
-        val sep: String = "\u02cc") {
+    val typeValues: TypeValues<T>,
+    val sep: String = "\u02cc"
+) {
     val joiner: ValuesJoiner<T> by lazy { ValuesJoiner(typeValues) }
     val converter: ValuesConverter.Text<T> by lazy { ValuesConverter.Text(typeValues) }
     val formatter: Function<T, String> by lazy { toFormatter(sep) }
@@ -52,17 +53,17 @@ class DataMapper<T> @JvmOverloads constructor(
         fun scan(clazz: Class<*>) {
             try {
                 clazz.declaredFields.asSequence()
-                        .filter {
-                            Modifier.isStatic(it.modifiers)
-                                    && it.type == DataMapper::class.java
+                    .filter {
+                        Modifier.isStatic(it.modifiers)
+                                && it.type == DataMapper::class.java
+                    }
+                    .forEach {
+                        val typeValues = makeTypeValues(it)
+                        it.isAccessible = true
+                        if (it[null] == null) {
+                            it[null] = DataMapper(typeValues)
                         }
-                        .forEach {
-                            val typeValues = makeTypeValues(it)
-                            it.isAccessible = true
-                            if (it[null] == null) {
-                                it[null] = DataMapper(typeValues)
-                            }
-                        }
+                    }
             } catch (e: ReflectiveOperationException) {
                 throw RuntimeException(e)
             }

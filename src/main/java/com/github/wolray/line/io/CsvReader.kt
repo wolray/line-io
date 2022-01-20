@@ -7,8 +7,9 @@ import java.util.stream.Stream
  * @author wolray
  */
 class CsvReader<T> internal constructor(
-        private val converter: ValuesConverter.Text<T>,
-        private val sep: String) : LineReader.Text<T>(converter.toParser(sep)) {
+    private val converter: ValuesConverter.Text<T>,
+    private val sep: String
+) : LineReader.Text<T>(converter.toParser(sep)) {
 
     override fun read(source: InputStream): Session {
         return read(source, 0)
@@ -34,7 +35,7 @@ class CsvReader<T> internal constructor(
     }
 
     inner class Session(source: InputStream, skipLines: Int) :
-            LineReader<InputStream, String, T>.Session(source, skipLines) {
+        LineReader<InputStream, String, T>.Session(source, skipLines) {
         private var cols: Array<String>? = null
 
         fun csvHeader(vararg cols: String): Session {
