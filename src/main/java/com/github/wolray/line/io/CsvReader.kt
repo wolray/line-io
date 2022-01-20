@@ -1,7 +1,6 @@
 package com.github.wolray.line.io
 
 import java.io.InputStream
-import java.util.stream.Stream
 
 /**
  * @author wolray
@@ -43,10 +42,10 @@ class CsvReader<T> internal constructor(
             return this
         }
 
-        override fun map(stream: Stream<String>): Stream<T> {
-            return if (cols.isNullOrEmpty().not()) {
-                StreamHelper.consumeFirst(stream, { setHeader(it, cols!!) }, function)
-            } else super.map(stream)
+        override fun prepare(iterator: Iterator<String>) {
+            if (cols.isNullOrEmpty().not()) {
+                setHeader(iterator.next(), cols!!)
+            } else super.prepare(iterator)
         }
     }
 }

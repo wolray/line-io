@@ -6,7 +6,6 @@ import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.*
 import java.util.function.Function
-import java.util.stream.Stream
 
 /**
  * @author wolray
@@ -20,7 +19,7 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
         return Session(source, skipLines)
     }
 
-    protected open fun toStream(source: S): Stream<V> {
+    protected open fun toIterator(source: S): Iterator<V> {
         throw UnsupportedOperationException()
     }
 
@@ -29,25 +28,27 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
     }
 
     open class Text<T> internal constructor(parser: Function<String, T>) : LineReader<InputStream, String, T>(parser) {
-        override fun toStream(source: InputStream): Stream<String> {
-            return BufferedReader(InputStreamReader(source)).lines()
+        override fun toIterator(source: InputStream): Iterator<String> {
+            return toIterator(BufferedReader(InputStreamReader(source)))
         }
     }
 
-    class Excel<T> internal constructor(private val sheetIndex: Int, converter: ValuesConverter.Excel<T>) :
-        LineReader<InputStream, Row, T>(converter) {
-        override fun toStream(source: InputStream): Stream<Row> {
+    class Excel<T> internal constructor(
+        private val sheetIndex: Int,
+        private val converter: ValuesConverter.Excel<T>
+    ) : LineReader<InputStream, Row, T>(converter::convert) {
+        override fun toIterator(source: InputStream): Iterator<Row> {
             return try {
                 val workbook: Workbook = XSSFWorkbook(source)
                 val sheet = workbook.getSheetAt(sheetIndex)
-                StreamHelper.toStream(sheet.iterator(), null)
+                sheet.iterator()
             } catch (e: IOException) {
                 throw UncheckedIOException(e)
             }
         }
 
         override fun reorder(slots: IntArray) {
-            (function as ValuesConverter.Excel<T>).resetOrder(slots)
+            converter.resetOrder(slots)
         }
     }
 
@@ -78,13 +79,19 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
             return this
         }
 
-        protected open fun map(stream: Stream<V>): Stream<T> {
+        protected open fun prepare(iterator: Iterator<V>) {
             slots?.takeIf(IntArray::isNotEmpty)?.also(::reorder)
-            return stream.map(function)
         }
 
         fun stream(): DataStream<T> {
-            return DataStream.of { map(toStream(source).skip(skipLines.toLong())) }
+            return DataStream {
+                val iterator = toIterator(source)
+                for (i in 0 until skipLines) {
+                    iterator.next()
+                }
+                prepare(iterator)
+                iterator.asSequence().map { function.apply(it) }
+            }
         }
     }
 
@@ -120,6 +127,35 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
                 FileInputStream(file)
             } catch (e: FileNotFoundException) {
                 null
+            }
+        }
+
+        @JvmStatic
+        fun toIterator(reader: BufferedReader): Iterator<String> {
+            return object : Iterator<String> {
+                var nextLine: String? = null
+                override fun hasNext(): Boolean {
+                    return if (nextLine != null) {
+                        true
+                    } else {
+                        try {
+                            nextLine = reader.readLine()
+                            nextLine != null
+                        } catch (e: IOException) {
+                            throw UncheckedIOException(e)
+                        }
+                    }
+                }
+
+                override fun next(): String {
+                    return if (nextLine != null || hasNext()) {
+                        val line = nextLine
+                        nextLine = null
+                        line!!
+                    } else {
+                        throw NoSuchElementException()
+                    }
+                }
             }
         }
     }

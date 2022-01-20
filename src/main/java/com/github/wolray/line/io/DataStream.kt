@@ -2,30 +2,35 @@ package com.github.wolray.line.io
 
 import com.github.wolray.line.io.LineReader.Companion.byJson
 import com.github.wolray.line.io.LineReader.Companion.toInputStream
-import java.util.function.*
+import java.util.function.Consumer
 import java.util.function.Function
+import java.util.function.Predicate
+import java.util.function.UnaryOperator
 import java.util.stream.Collector
 import java.util.stream.Collectors
-import java.util.stream.Stream
 
 /**
  * @author wolray
  */
 class DataStream<T> {
     private var ts: List<T>? = null
-    private var supplier: Supplier<Stream<T>>? = null
+    private var supplier: (() -> Sequence<T>)? = null
 
-    private constructor(ts: List<T>) {
-        setList(ts)
+    internal constructor(iterable: Iterable<T>) {
+        if (iterable is List<*>) {
+            setList(iterable as List<T>)
+        } else {
+            supplier = { iterable.iterator().asSequence() }
+        }
     }
 
-    private constructor(supplier: Supplier<Stream<T>>) {
+    internal constructor(supplier: () -> Sequence<T>) {
         this.supplier = supplier
     }
 
     private fun setList(list: List<T>) {
         ts = list
-        supplier = Supplier { list.stream() }
+        supplier = { list.iterator().asSequence() }
     }
 
     fun isReusable(): Boolean {
@@ -34,16 +39,16 @@ class DataStream<T> {
 
     fun reuse(): DataStream<T> {
         if (!isReusable()) {
-            setList(supplier!!.get().collect(Collectors.toCollection { DataList<T>() }))
+            setList(supplier!!.invoke().toCollection(DataList()))
         }
         return this
     }
 
-    private fun mod(op: UnaryOperator<Stream<T>>): DataStream<T> {
+    private fun mod(op: (Sequence<T>) -> Sequence<T>): DataStream<T> {
         val old = supplier
-        val next = Supplier { op.apply(old!!.get()) }
+        val next = { op.invoke(old!!.invoke()) }
         return if (isReusable()) {
-            of(next)
+            DataStream(next)
         } else {
             supplier = next
             this
@@ -51,7 +56,8 @@ class DataStream<T> {
     }
 
     fun peek(action: Consumer<T>): DataStream<T> {
-        return mod { s -> s.peek(action) }
+        val consumer = action::accept
+        return mod { s -> s.onEach(consumer) }
     }
 
     fun parallelPeek(action: Consumer<T>): DataStream<T> {
@@ -60,11 +66,12 @@ class DataStream<T> {
     }
 
     fun limit(maxSize: Int): DataStream<T> {
-        return mod { s -> s.limit(maxSize.toLong()) }
+        return mod { s -> s.take(maxSize) }
     }
 
     fun filter(predicate: Predicate<T>): DataStream<T> {
-        return mod { s -> s.filter(predicate) }
+        val p = predicate::test
+        return mod { s -> s.filter(p) }
     }
 
     fun consumeIf(condition: Boolean, consumer: Consumer<DataStream<T>>): DataStream<T> {
@@ -129,14 +136,14 @@ class DataStream<T> {
 
     fun <E> map(mapper: Function<T, E>): DataStream<E> {
         val old = supplier
-        return of { old!!.get().map(mapper) }
+        return DataStream { old!!.invoke().map { mapper.apply(it) } }
     }
 
     fun forEach(action: Consumer<T>) {
         if (isReusable()) {
             ts!!.forEach(action)
         } else {
-            supplier!!.get().forEach(action)
+            supplier!!.invoke().forEach(action::accept)
         }
     }
 
@@ -151,7 +158,9 @@ class DataStream<T> {
 
     fun <K> toSet(mapper: Function<T, K>): Set<K> {
         val ts = toList()
-        return ts.map(mapper::apply).toCollection(HashSet(ts.size))
+        val set: MutableSet<K> = HashSet(ts.size)
+        ts.forEach { set.add(mapper.apply(it)) }
+        return set
     }
 
     fun <K, V> toMap(keyMapper: Function<T, K>, valueMapper: Function<T, V>): Map<K, V> {
@@ -162,7 +171,7 @@ class DataStream<T> {
     }
 
     fun <K, V> groupBy(keyMapper: Function<T, K>, collector: Collector<T, *, V>): Map<K, V> {
-        return supplier!!.get().collect(Collectors.groupingBy(keyMapper, collector))
+        return toList().stream().collect(Collectors.groupingBy(keyMapper, collector))
     }
 
     interface Cache<T> {
@@ -173,22 +182,13 @@ class DataStream<T> {
 
     companion object {
         @JvmStatic
-        fun <T> of(ts: Collection<T>): DataStream<T> {
-            return if (ts is List<*>) {
-                DataStream(ts as List<T>)
-            } else {
-                of { ts.stream() }
-            }
-        }
-
-        @JvmStatic
-        fun <T> of(supplier: Supplier<Stream<T>>): DataStream<T> {
-            return DataStream(supplier)
+        fun <T> of(ts: Iterable<T>): DataStream<T> {
+            return DataStream(ts)
         }
 
         @JvmStatic
         fun <T> empty(): DataStream<T> {
-            return of { Stream.empty() }
+            return of(emptyList())
         }
     }
 }
