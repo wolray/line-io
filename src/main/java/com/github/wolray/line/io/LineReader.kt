@@ -27,7 +27,8 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
         throw UnsupportedOperationException()
     }
 
-    open class Text<T> internal constructor(parser: Function<String, T>) : LineReader<InputStream, String, T>(parser) {
+    open class Text<T> internal constructor(parser: Function<String, T>) :
+        LineReader<InputStream, String, T>(parser) {
         override fun toIterator(source: InputStream): Iterator<String> {
             return toIterator(BufferedReader(InputStreamReader(source)))
         }

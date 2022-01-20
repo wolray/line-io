@@ -18,7 +18,7 @@ class ValuesJoiner<T>(private val typeValues: TypeValues<T>) {
         for (attr in attrs) {
             attr.formatter = toString
         }
-        TypeValues.processSimpleMethods(typeValues.type, this::processMethod)
+        TypeValues.processSimpleMethods(typeValues.type) { processMethod(it) }
     }
 
     fun processMethod(simpleMethod: TypeValues.SimpleMethod) {
