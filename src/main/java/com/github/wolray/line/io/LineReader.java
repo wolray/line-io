@@ -7,8 +7,8 @@ import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 
 import java.io.*;
+import java.util.Iterator;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * @author ray
@@ -56,7 +56,7 @@ public class LineReader<S, V, T> {
         return new Session(source, skipLines);
     }
 
-    protected Stream<V> toStream(S source) {
+    protected Iterator<V> toIterator(S source) {
         throw new UnsupportedOperationException();
     }
 
@@ -70,8 +70,8 @@ public class LineReader<S, V, T> {
         }
 
         @Override
-        protected Stream<String> toStream(InputStream source) {
-            return new BufferedReader(new InputStreamReader(source)).lines();
+        protected Iterator<String> toIterator(InputStream source) {
+            return IteratorHelper.toIterator(new BufferedReader(new InputStreamReader(source)));
         }
     }
 
@@ -84,11 +84,11 @@ public class LineReader<S, V, T> {
         }
 
         @Override
-        protected Stream<Row> toStream(InputStream source) {
+        protected Iterator<Row> toIterator(InputStream source) {
             try {
                 Workbook workbook = new XSSFWorkbook(source);
                 Sheet sheet = workbook.getSheetAt(sheetIndex);
-                return StreamHelper.toStream(sheet.iterator(), null);
+                return sheet.iterator();
             } catch (IOException e) {
                 throw new UncheckedIOException(e);
             }
@@ -135,15 +135,21 @@ public class LineReader<S, V, T> {
             return this;
         }
 
-        protected Stream<T> map(Stream<V> stream) {
+        protected void preprocess(Iterator<V> iterator) {
             if (slots != null && slots.length > 0) {
                 reorder(slots);
             }
-            return stream.map(function);
         }
 
         public DataStream<T> stream() {
-            return DataStream.of(() -> map(toStream(source).skip(skipLines)));
+            return DataStream.of(() -> {
+                Iterator<V> iterator = toIterator(source);
+                for (int i = 0; i < skipLines; i++) {
+                    iterator.next();
+                }
+                preprocess(iterator);
+                return IteratorHelper.toStream(iterator, null).map(function);
+            });
         }
     }
 }
