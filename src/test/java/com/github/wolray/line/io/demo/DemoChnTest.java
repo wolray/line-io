@@ -38,7 +38,7 @@ public class DemoChnTest {
             .filter(p -> p.age >= 18)
             // 把这些对象缓存到另一个csv文件里
             // 下次执行这段代码的时候，如果缓存文件存在则直接从文件里读取
-            .cacheCsv(",", Person.class, "some-path/person_18.csv")
+            .cacheCsv("some-path/person_18.csv", Person.class, ",")
             // 转成一个基于单向链表的list，随着数量增加对内存更友好
             .toList();
 

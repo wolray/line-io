@@ -2,9 +2,9 @@ package com.github.wolray.line.io;
 
 import java.io.InputStream;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
-import java.util.stream.Stream;
 
 /**
  * @author ray
@@ -60,12 +60,12 @@ public class CsvReader<T> extends LineReader.Text<T> {
         }
 
         @Override
-        protected Stream<T> map(Stream<String> stream) {
+        protected void preprocess(Iterator<String> iterator) {
             if (cols != null && cols.length > 0) {
-                return StreamHelper.consumeFirst(stream,
-                    s -> setHeader(s, cols), function);
+                setHeader(iterator.next(), cols);
+            } else {
+                super.preprocess(iterator);
             }
-            return super.map(stream);
         }
     }
 }
