@@ -10,6 +10,7 @@ import java.io.*;
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.Stream;
 
 /**
  * @author wolray
@@ -63,6 +64,10 @@ public class LineReader<S, V, T> {
 
     protected void reorder(int[] slots) {
         throw new UnsupportedOperationException();
+    }
+
+    public interface SizedIterator<T> extends Iterator<T> {
+        long size();
     }
 
     public static class Text<T> extends LineReader<InputStream, String, T> {
@@ -137,15 +142,21 @@ public class LineReader<S, V, T> {
             return this;
         }
 
-        public Session preFilter(Predicate<V> predicate) {
-            this.predicate = predicate;
-            return this;
-        }
-
         protected void preprocess(Iterator<V> iterator) {
             if (slots != null && slots.length > 0) {
                 reorder(slots);
             }
+        }
+
+        public Session preFilter(Predicate<V> predicate) {
+            return preFilterIf(true, predicate);
+        }
+
+        public Session preFilterIf(boolean condition, Predicate<V> predicate) {
+            if (condition) {
+                this.predicate = predicate;
+            }
+            return this;
         }
 
         public DataStream<T> stream() {
@@ -155,9 +166,15 @@ public class LineReader<S, V, T> {
                     iterator.next();
                 }
                 preprocess(iterator);
-                return IteratorHelper.toStream(iterator, null)
-                    .filter(predicate)
-                    .map(function);
+                Long size = null;
+                if (iterator instanceof SizedIterator) {
+                    size = ((SizedIterator<V>)iterator).size();
+                }
+                Stream<V> stream = IteratorHelper.toStream(iterator, size);
+                if (predicate != null) {
+                    stream = stream.filter(predicate);
+                }
+                return stream.map(function);
             });
         }
     }
