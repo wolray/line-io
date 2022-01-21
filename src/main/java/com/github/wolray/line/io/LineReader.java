@@ -9,6 +9,7 @@ import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import java.io.*;
 import java.util.Iterator;
 import java.util.function.Function;
+import java.util.function.Predicate;
 
 /**
  * @author wolray
@@ -103,6 +104,7 @@ public class LineReader<S, V, T> {
     public class Session {
         private final S source;
         private final int skipLines;
+        private Predicate<V> predicate;
         private int[] slots;
 
         protected Session(S source, int skipLines) {
@@ -135,6 +137,11 @@ public class LineReader<S, V, T> {
             return this;
         }
 
+        public Session preFilter(Predicate<V> predicate) {
+            this.predicate = predicate;
+            return this;
+        }
+
         protected void preprocess(Iterator<V> iterator) {
             if (slots != null && slots.length > 0) {
                 reorder(slots);
@@ -148,7 +155,9 @@ public class LineReader<S, V, T> {
                     iterator.next();
                 }
                 preprocess(iterator);
-                return IteratorHelper.toStream(iterator, null).map(function);
+                return IteratorHelper.toStream(iterator, null)
+                    .filter(predicate)
+                    .map(function);
             });
         }
     }
