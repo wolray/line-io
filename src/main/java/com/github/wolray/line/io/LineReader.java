@@ -148,11 +148,11 @@ public class LineReader<S, V, T> {
             }
         }
 
-        public Session preFilter(Predicate<V> predicate) {
-            return preFilterIf(true, predicate);
+        public Session filter(Predicate<V> predicate) {
+            return filterIf(true, predicate);
         }
 
-        public Session preFilterIf(boolean condition, Predicate<V> predicate) {
+        public Session filterIf(boolean condition, Predicate<V> predicate) {
             if (condition) {
                 this.predicate = predicate;
             }
