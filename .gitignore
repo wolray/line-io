@@ -2,3 +2,4 @@
 target
 *.iml
 **/test/resources/
+dependency-reduced-pom.xml
