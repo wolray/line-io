@@ -18,6 +18,14 @@ public class DataMapper<T> {
     private Function<T, String> formatter;
     private Function<String, T> parser;
 
+    public DataMapper(Class<T> type) {
+        this(new TypeValues<>(type));
+    }
+
+    public DataMapper(Class<T> type, String sep) {
+        this(new TypeValues<>(type), sep);
+    }
+
     public DataMapper(TypeValues<T> typeValues) {
         this(typeValues, "\u02cc");
     }
