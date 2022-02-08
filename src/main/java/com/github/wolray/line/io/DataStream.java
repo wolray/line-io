@@ -72,11 +72,6 @@ public class DataStream<T> {
         return mod(s -> s.peek(action));
     }
 
-    public DataStream<T> parallelPeek(Consumer<T> action) {
-        toList().parallelStream().forEach(action);
-        return this;
-    }
-
     public DataStream<T> filter(Predicate<T> predicate) {
         return mod(s -> s.filter(predicate));
     }
@@ -157,6 +152,10 @@ public class DataStream<T> {
         } else {
             supplier.get().forEach(action);
         }
+    }
+
+    public void parallelFor(Consumer<T> action) {
+        toList().parallelStream().forEach(action);
     }
 
     public List<T> toList() {
