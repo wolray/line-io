@@ -49,6 +49,16 @@ public class DataList<T> extends AbstractList<T> {
         };
     }
 
+    @Override
+    public void clear() {
+        Node<T> n = dummy, next;
+        while (n.next != null) {
+            next = n.next;
+            n.next = null;
+            n = next;
+        }
+    }
+
     private static class Node<T> {
         T t;
         Node<T> next;
