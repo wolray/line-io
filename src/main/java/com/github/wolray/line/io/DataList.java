@@ -57,6 +57,7 @@ public class DataList<T> extends AbstractList<T> {
             n.next = null;
             n = next;
         }
+        size = 0;
     }
 
     private static class Node<T> {
