@@ -10,6 +10,7 @@ import java.io.*;
 import java.util.Iterator;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 /**
@@ -115,6 +116,15 @@ public class LineReader<S, V, T> {
         protected Session(S source, int skipLines) {
             this.source = source;
             this.skipLines = skipLines;
+        }
+
+        public Session columnsBefore(int index) {
+            return columnsRange(0, index);
+        }
+
+        public Session columnsRange(int startInclusive, int endExclusive) {
+            slots = IntStream.range(startInclusive, endExclusive).toArray();
+            return this;
         }
 
         public Session columns(int... slots) {
