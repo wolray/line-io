@@ -1,9 +1,5 @@
 package com.github.wolray.line.io;
 
-import java.lang.reflect.Field;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.util.Objects;
 import java.util.function.Function;
 
@@ -35,39 +31,8 @@ public class DataMapper<T> {
         this.sep = Objects.requireNonNull(sep);
     }
 
-    public static synchronized <T> void scan(Class<T> clazz) {
-        try {
-            for (Field f : clazz.getDeclaredFields()) {
-                if (Modifier.isStatic(f.getModifiers())) {
-                    Class<?> type = f.getType();
-                    if (type == DataMapper.class) {
-                        TypeValues<?> typeValues = makeTypeValues(f);
-                        f.setAccessible(true);
-                        Object value = f.get(null);
-                        if (value == null) {
-                            f.set(null, new DataMapper<>(typeValues));
-                        }
-                    }
-                }
-            }
-        } catch (ReflectiveOperationException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static TypeValues<?> makeTypeValues(Field f) {
-        Type genericType = f.getGenericType();
-        if (genericType instanceof ParameterizedType) {
-            Type argument = ((ParameterizedType)genericType).getActualTypeArguments()[0];
-            Class<?> type = (Class<?>)argument;
-            Fields fields = f.getAnnotation(Fields.class);
-            if (fields != null) {
-                return new TypeValues<>(type, fields);
-            } else {
-                return new TypeValues<>(type);
-            }
-        }
-        throw new IllegalStateException("unset DataMapper type");
+    public static <T> DataMapper.Builder<T> of(Class<T> type) {
+        return new Builder<>(type);
     }
 
     public DataMapper<T> newSep(String sep) {
@@ -136,6 +101,50 @@ public class DataMapper<T> {
             }
             formatter = toFormatter(sep);
             return formatter.apply(t);
+        }
+    }
+
+    public static class Builder<T> {
+        private final Class<T> type;
+        private final FieldSelector selector = new FieldSelector();
+        private String sep = "\u02cc";
+
+        private Builder(Class<T> type) {
+            this.type = type;
+        }
+
+        public Builder<T> pojo() {
+            selector.pojo = true;
+            return this;
+        }
+
+        public Builder<T> use(String... fields) {
+            selector.use = fields;
+            return this;
+        }
+
+        public Builder<T> omit(String... fields) {
+            selector.omit = fields;
+            return this;
+        }
+
+        public Builder<T> useRegex(String fieldsRegex) {
+            selector.useRegex = fieldsRegex;
+            return this;
+        }
+
+        public Builder<T> omitRegex(String fieldsRegex) {
+            selector.omitRegex = fieldsRegex;
+            return this;
+        }
+
+        public Builder<T> sep(String sep) {
+            this.sep = sep;
+            return this;
+        }
+
+        public DataMapper<T> build() {
+            return new DataMapper<>(new TypeValues<>(type, selector), sep);
         }
     }
 }

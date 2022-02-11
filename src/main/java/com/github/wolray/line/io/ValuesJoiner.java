@@ -37,7 +37,7 @@ public class ValuesJoiner<T> {
             method.setAccessible(true);
             Function<Object, String> function = s -> (String)invoke(method, s);
             Fields fields = method.getAnnotation(Fields.class);
-            Predicate<Field> predicate = TypeValues.makePredicate(fields);
+            Predicate<Field> predicate = FieldSelector.toPredicate(fields);
             Arrays.stream(attrs)
                 .filter(a -> predicate.test(a.field))
                 .filter(a -> a.field.getType() == paraType)

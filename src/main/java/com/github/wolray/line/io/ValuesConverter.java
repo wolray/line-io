@@ -86,7 +86,7 @@ public class ValuesConverter<V, T> implements Function<V, T> {
         Class<?> returnType = simpleMethod.returnType;
         if (simpleMethod.paraType == String.class) {
             Fields fields = method.getAnnotation(Fields.class);
-            Predicate<Field> predicate = TypeValues.makePredicate(fields);
+            Predicate<Field> predicate = FieldSelector.toPredicate(fields);
             Stream<TypeValues.Attr> stream = Arrays.stream(attrs)
                 .filter(a -> predicate.test(a.field));
             method.setAccessible(true);

@@ -5,8 +5,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -21,14 +19,14 @@ public class TypeValues<T> {
     public final Field[] values;
 
     public TypeValues(Class<T> type) {
-        this(type, type.getAnnotation(Fields.class));
+        this(type, FieldSelector.of(type.getAnnotation(Fields.class)));
     }
 
-    public TypeValues(Class<T> type, Fields fields) {
+    public TypeValues(Class<T> type, FieldSelector selector) {
         this.type = type;
-        Stream<Field> stream = getFields(type, fields)
+        Stream<Field> stream = getFields(type, selector)
             .filter(f -> checkModifier(f.getModifiers()));
-        Predicate<Field> predicate = makePredicate(fields);
+        Predicate<Field> predicate = selector.toPredicate();
         values = stream.filter(predicate).toArray(Field[]::new);
     }
 
@@ -42,30 +40,6 @@ public class TypeValues<T> {
         } catch (IllegalAccessException | InvocationTargetException e) {
             return null;
         }
-    }
-
-    static Predicate<Field> makePredicate(Fields fields) {
-        if (fields != null) {
-            String[] use = fields.use();
-            if (use.length > 0) {
-                Set<String> set = new HashSet<>(Arrays.asList(use));
-                return f -> set.contains(f.getName());
-            }
-            String[] omit = fields.omit();
-            if (omit.length > 0) {
-                Set<String> set = new HashSet<>(Arrays.asList(omit));
-                return f -> !set.contains(f.getName());
-            }
-            String useRegex = fields.useRegex();
-            if (!useRegex.isEmpty()) {
-                return f -> f.getName().matches(useRegex);
-            }
-            String omitRegex = fields.omitRegex();
-            if (!omitRegex.isEmpty()) {
-                return f -> !f.getName().matches(omitRegex);
-            }
-        }
-        return f -> true;
     }
 
     static void processSimpleMethods(Class<?> type, Consumer<SimpleMethod> consumer) {
@@ -84,8 +58,8 @@ public class TypeValues<T> {
         return Arrays.stream(values).map(Attr::new).toArray(Attr[]::new);
     }
 
-    private Stream<Field> getFields(Class<T> type, Fields fields) {
-        if (fields != null && fields.pojo()) {
+    private Stream<Field> getFields(Class<T> type, FieldSelector selector) {
+        if (selector != null && selector.pojo) {
             return Arrays.stream(type.getDeclaredFields())
                 .filter(f -> Modifier.isPrivate(f.getModifiers()))
                 .peek(f -> f.setAccessible(true));
@@ -94,12 +68,12 @@ public class TypeValues<T> {
         }
     }
 
-    public static class SimpleMethod {
-        public final Method method;
-        public final Class<?> paraType;
-        public final Class<?> returnType;
+    static class SimpleMethod {
+        final Method method;
+        final Class<?> paraType;
+        final Class<?> returnType;
 
-        public SimpleMethod(Method method, Class<?> paraType, Class<?> returnType) {
+        SimpleMethod(Method method, Class<?> paraType, Class<?> returnType) {
             this.method = method;
             this.paraType = paraType;
             this.returnType = returnType;
@@ -131,16 +105,16 @@ public class TypeValues<T> {
             return o != null ? function.apply(o) : null;
         }
 
+        public String format(Object o) {
+            return o != null ? formatter.apply(o) : "";
+        }
+
         void set(Object t, Object o) {
             try {
                 field.set(t, o);
             } catch (IllegalAccessException e) {
                 throw new RuntimeException(e);
             }
-        }
-
-        String format(Object o) {
-            return o != null ? formatter.apply(o) : "";
         }
 
         Object get(Object t) {
