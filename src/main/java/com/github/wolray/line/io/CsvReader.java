@@ -50,7 +50,7 @@ public class CsvReader<T> extends LineReader.Text<T> {
     public class Session extends Text<T>.Session {
         private String[] cols;
 
-        public Session(InputStream is, int skipLines) {
+        protected Session(InputStream is, int skipLines) {
             super(is, skipLines);
         }
 

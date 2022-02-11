@@ -13,10 +13,10 @@ import java.util.function.Function;
 public class DataMapper<T> {
     public final TypeValues<T> typeValues;
     public final String sep;
-    private ValuesJoiner<T> joiner;
     private ValuesConverter.Text<T> converter;
-    private Function<T, String> formatter;
+    private ValuesJoiner<T> joiner;
     private Function<String, T> parser;
+    private Function<T, String> formatter;
 
     public DataMapper(Class<T> type) {
         this(new TypeValues<>(type));
@@ -77,13 +77,6 @@ public class DataMapper<T> {
         return new DataMapper<>(typeValues, sep);
     }
 
-    public ValuesJoiner<T> getJoiner() {
-        if (joiner == null) {
-            joiner = new ValuesJoiner<>(typeValues);
-        }
-        return joiner;
-    }
-
     public ValuesConverter.Text<T> getConverter() {
         if (converter == null) {
             converter = new ValuesConverter.Text<>(typeValues);
@@ -91,20 +84,19 @@ public class DataMapper<T> {
         return converter;
     }
 
-    public Function<T, String> toFormatter(String sep) {
-        return getJoiner().toFormatter(sep);
+    public ValuesJoiner<T> getJoiner() {
+        if (joiner == null) {
+            joiner = new ValuesJoiner<>(typeValues);
+        }
+        return joiner;
     }
 
     public Function<String, T> toParser(String sep) {
         return getConverter().toParser(sep);
     }
 
-    public LineWriter<T> toWriter() {
-        return toWriter(sep);
-    }
-
-    public LineWriter<T> toWriter(String sep) {
-        return new LineWriter<>(toFormatter(sep));
+    public Function<T, String> toFormatter(String sep) {
+        return getJoiner().toFormatter(sep);
     }
 
     public CsvReader<T> toReader() {
@@ -115,16 +107,12 @@ public class DataMapper<T> {
         return new CsvReader<>(getConverter(), sep);
     }
 
-    public String format(T t) {
-        try {
-            return formatter.apply(t);
-        } catch (NullPointerException e) {
-            if (formatter != null) {
-                throw e;
-            }
-            formatter = toFormatter(sep);
-            return formatter.apply(t);
-        }
+    public CsvWriter<T> toWriter() {
+        return toWriter(sep);
+    }
+
+    public CsvWriter<T> toWriter(String sep) {
+        return new CsvWriter<>(getJoiner(), sep);
     }
 
     public T parse(String s) {
@@ -136,6 +124,18 @@ public class DataMapper<T> {
             }
             parser = toParser(sep);
             return parser.apply(s);
+        }
+    }
+
+    public String format(T t) {
+        try {
+            return formatter.apply(t);
+        } catch (NullPointerException e) {
+            if (formatter != null) {
+                throw e;
+            }
+            formatter = toFormatter(sep);
+            return formatter.apply(t);
         }
     }
 }
