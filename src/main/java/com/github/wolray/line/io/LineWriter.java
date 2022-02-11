@@ -65,12 +65,12 @@ public class LineWriter<T> {
                     preprocess(file, bw);
                     for (String header : headers) {
                         bw.write(header);
-                        bw.write('\n');
+                        bw.newLine();
                     }
                 }
                 for (T t : iterable) {
                     bw.write(formatter.apply(t));
-                    bw.write('\n');
+                    bw.newLine();
                 }
             } catch (IOException e) {
                 throw new UncheckedIOException(e);

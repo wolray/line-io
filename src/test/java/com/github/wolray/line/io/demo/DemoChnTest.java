@@ -59,7 +59,9 @@ public class DemoChnTest {
         Map<Integer, List<Person>> genderGroupMap = stream.groupBy(p -> p.gender, Collectors.toList());
 
         // 把persons对象另存到一个csv文件里
-        LineWriter.byCsv(",", Person.class).writeAsync(persons, "some-path/person_dump.csv");
+        LineWriter.byCsv(",", Person.class)
+            .write(persons)
+            .asyncTo("some-path/person_dump.csv");
     }
 
     /**

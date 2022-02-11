@@ -63,7 +63,9 @@ public class DemoTest {
         System.out.println(genderGroupMap);
 
         // write persons to another csv file
-        LineWriter.byCsv(",", Person.class).writeAsync(persons, "some-path/person_dump.csv");
+        LineWriter.byCsv(",", Person.class)
+            .write(persons)
+            .asyncTo("some-path/person_dump.csv");
     }
 
     /**
