@@ -56,9 +56,13 @@ public class TypeValues<T> {
                 Set<String> set = new HashSet<>(Arrays.asList(omit));
                 return f -> !set.contains(f.getName());
             }
-            String regex = fields.regex();
-            if (!regex.isEmpty()) {
-                return f -> f.getName().matches(regex);
+            String useRegex = fields.useRegex();
+            if (!useRegex.isEmpty()) {
+                return f -> f.getName().matches(useRegex);
+            }
+            String omitRegex = fields.omitRegex();
+            if (!omitRegex.isEmpty()) {
+                return f -> !f.getName().matches(omitRegex);
             }
         }
         return f -> true;

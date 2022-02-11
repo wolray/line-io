@@ -36,7 +36,6 @@ public class LineWriter<T> {
     public class Session {
         private final Iterable<T> iterable;
         private final List<String> headers = new LinkedList<>();
-
         private boolean append;
 
         protected Session(Iterable<T> iterable) {

@@ -38,9 +38,9 @@ public class CsvWriter<T> extends LineWriter<T> {
             return this;
         }
 
-        public Session columns(String... columns) {
-            if (columns.length > 0) {
-                addHeader(String.join(sep, columns));
+        public Session columnNames(String... names) {
+            if (names.length > 0) {
+                addHeader(String.join(sep, names));
             }
             return this;
         }

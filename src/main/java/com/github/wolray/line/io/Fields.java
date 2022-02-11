@@ -17,5 +17,7 @@ public @interface Fields {
 
     String[] omit() default {};
 
-    String regex() default "";
+    String useRegex() default "";
+
+    String omitRegex() default "";
 }
