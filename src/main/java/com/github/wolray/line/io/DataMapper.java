@@ -128,13 +128,13 @@ public class DataMapper<T> {
             return this;
         }
 
-        public Builder<T> useRegex(String fieldsRegex) {
-            selector.useRegex = fieldsRegex;
+        public Builder<T> useRegex(String regex) {
+            selector.useRegex = regex;
             return this;
         }
 
-        public Builder<T> omitRegex(String fieldsRegex) {
-            selector.omitRegex = fieldsRegex;
+        public Builder<T> omitRegex(String regex) {
+            selector.omitRegex = regex;
             return this;
         }
 
