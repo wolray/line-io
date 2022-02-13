@@ -7,6 +7,11 @@
     <groupId>com.github.wolray</groupId>
     <artifactId>line-io</artifactId>
     <version>1.3.1</version>
+
+    <properties>
+        <kotlin.version>1.6.10</kotlin.version>
+    </properties>
+
     <build>
         <plugins>
             <plugin>
@@ -16,6 +21,23 @@
                 <configuration>
                     <source>8</source>
                     <target>8</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.jetbrains.kotlin</groupId>
+                <artifactId>kotlin-maven-plugin</artifactId>
+                <version>${kotlin.version}</version>
+                <executions>
+                    <execution>
+                        <id>compile</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <jvmTarget>1.8</jvmTarget>
                 </configuration>
             </plugin>
         </plugins>
@@ -50,6 +72,11 @@
             <artifactId>jmh-generator-annprocess</artifactId>
             <version>1.34</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.jetbrains.kotlin</groupId>
+            <artifactId>kotlin-stdlib-jdk8</artifactId>
+            <version>${kotlin.version}</version>
         </dependency>
     </dependencies>
 
