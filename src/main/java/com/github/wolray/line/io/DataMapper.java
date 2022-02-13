@@ -14,14 +14,6 @@ public class DataMapper<T> {
     private Function<String, T> parser;
     private Function<T, String> formatter;
 
-    public DataMapper(Class<T> type) {
-        this(new TypeValues<>(type));
-    }
-
-    public DataMapper(Class<T> type, String sep) {
-        this(new TypeValues<>(type), sep);
-    }
-
     public DataMapper(TypeValues<T> typeValues) {
         this(typeValues, "\u02cc");
     }
@@ -29,6 +21,14 @@ public class DataMapper<T> {
     public DataMapper(TypeValues<T> typeValues, String sep) {
         this.typeValues = Objects.requireNonNull(typeValues);
         this.sep = Objects.requireNonNull(sep);
+    }
+
+    public static <T> DataMapper<T> simple(Class<T> type) {
+        return new DataMapper<>(new TypeValues<>(type));
+    }
+
+    public static <T> DataMapper<T> simple(Class<T> type, String sep) {
+        return new DataMapper<>(new TypeValues<>(type), sep);
     }
 
     public static <T> DataMapper.Builder<T> of(Class<T> type) {
