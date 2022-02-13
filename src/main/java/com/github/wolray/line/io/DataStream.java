@@ -117,7 +117,7 @@ public class DataStream<T> {
 
             @Override
             public void write(List<T> ts) {
-                writer.get().write(ts).to(f);
+                writer.get().write(f).with(ts);
             }
         });
     }

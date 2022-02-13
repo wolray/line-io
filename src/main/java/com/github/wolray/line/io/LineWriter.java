@@ -29,17 +29,17 @@ public class LineWriter<T> {
         return new CsvWriter<>(new ValuesJoiner<>(new TypeValues<>(type)), sep);
     }
 
-    public Session write(Iterable<T> iterable) {
-        return new Session(iterable);
+    public Session write(String file) {
+        return new Session(file);
     }
 
     public class Session {
-        private final Iterable<T> iterable;
+        protected final String file;
         private final List<String> headers = new LinkedList<>();
         private boolean append;
 
-        protected Session(Iterable<T> iterable) {
-            this.iterable = iterable;
+        protected Session(String file) {
+            this.file = file;
         }
 
         public Session addHeader(String header) {
@@ -52,16 +52,16 @@ public class LineWriter<T> {
             return this;
         }
 
-        protected void preprocess(String file, BufferedWriter bw) throws IOException {}
+        protected void preprocess(BufferedWriter bw) throws IOException {}
 
-        public void asyncTo(String file) {
-            CompletableFuture.runAsync(() -> to(file));
+        public void asyncWith(Iterable<T> iterable) {
+            CompletableFuture.runAsync(() -> with(iterable));
         }
 
-        public void to(String file) {
+        public void with(Iterable<T> iterable) {
             try (BufferedWriter bw = new BufferedWriter(new FileWriter(file, append))) {
                 if (!append) {
-                    preprocess(file, bw);
+                    preprocess(bw);
                     for (String header : headers) {
                         bw.write(header);
                         bw.newLine();

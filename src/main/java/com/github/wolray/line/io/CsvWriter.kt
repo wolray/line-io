@@ -11,10 +11,10 @@ class CsvWriter<T> internal constructor(
     private val sep: String
 ) : LineWriter<T>(joiner.toFormatter(sep)) {
 
-    override fun write(iterable: Iterable<T>) = Session(iterable)
+    override fun write(file: String) = Session(file)
 
-    inner class Session internal constructor(iterable: Iterable<T>) :
-        LineWriter<T>.Session(iterable) {
+    inner class Session internal constructor(file: String) :
+        LineWriter<T>.Session(file) {
         private var utf8 = false
 
         fun markUtf8(): Session {
@@ -35,7 +35,7 @@ class CsvWriter<T> internal constructor(
         }
 
         @Throws(IOException::class)
-        override fun preprocess(file: String, bw: BufferedWriter) {
+        override fun preprocess(bw: BufferedWriter) {
             if (utf8 && file.endsWith(".csv")) {
                 bw.write('\ufeff'.code)
             }

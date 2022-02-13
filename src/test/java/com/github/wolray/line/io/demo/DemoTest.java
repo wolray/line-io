@@ -65,7 +65,7 @@ public class DemoTest {
         // write persons to another csv file
         LineWriter.byCsv(",", Person.class)
             .write(persons)
-            .asyncTo("some-path/person_dump.csv");
+            .asyncWith("some-path/person_dump.csv");
     }
 
     /**
