@@ -107,7 +107,6 @@ public class DataMapper<T> {
     public static class Builder<T> {
         private final Class<T> type;
         private final FieldSelector selector = new FieldSelector();
-        private String sep = "\u02cc";
 
         private Builder(Class<T> type) {
             this.type = type;
@@ -138,12 +137,11 @@ public class DataMapper<T> {
             return this;
         }
 
-        public Builder<T> sep(String sep) {
-            this.sep = sep;
-            return this;
+        public DataMapper<T> build() {
+            return new DataMapper<>(new TypeValues<>(type, selector));
         }
 
-        public DataMapper<T> build() {
+        public DataMapper<T> build(String sep) {
             return new DataMapper<>(new TypeValues<>(type, selector), sep);
         }
     }
