@@ -60,8 +60,9 @@ public class DemoChnTest {
 
         // 把persons对象另存到一个csv文件里
         LineWriter.byCsv(",", Person.class)
-            .write(persons)
-            .asyncWith("some-path/person_dump.csv");
+            .write("some-path/person_dump.csv")
+            .autoHeader()
+            .asyncWith(persons);
     }
 
     /**

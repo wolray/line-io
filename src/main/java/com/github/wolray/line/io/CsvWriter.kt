@@ -22,7 +22,7 @@ class CsvWriter<T> internal constructor(
             return this
         }
 
-        fun withHeader(): Session {
+        fun autoHeader(): Session {
             addHeader(joiner.join(sep) { it.field.name })
             return this
         }
