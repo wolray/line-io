@@ -17,21 +17,14 @@ class CsvWriter<T> internal constructor(
         LineWriter<T>.Session(file) {
         private var utf8 = false
 
-        fun markUtf8(): Session {
-            utf8 = true
-            return this
-        }
+        fun markUtf8() = apply { utf8 = true }
 
-        fun autoHeader(): Session {
-            addHeader(joiner.join(sep) { it.field.name })
-            return this
-        }
+        fun autoHeader() = apply { addHeader(joiner.join(sep) { it.field.name }) }
 
-        fun columnNames(vararg names: String): Session {
+        fun columnNames(vararg names: String) = apply {
             if (names.isNotEmpty()) {
                 addHeader(names.joinToString(sep))
             }
-            return this
         }
 
         @Throws(IOException::class)

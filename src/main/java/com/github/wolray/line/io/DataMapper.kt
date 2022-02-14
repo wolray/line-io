@@ -39,30 +39,15 @@ class DataMapper<T> @JvmOverloads constructor(
     class Builder<T> internal constructor(private val type: Class<T>) {
         private val selector = FieldSelector()
 
-        fun pojo(): Builder<T> {
-            selector.pojo = true
-            return this
-        }
+        fun pojo() = apply { selector.pojo = true }
 
-        fun use(vararg fields: String): Builder<T> {
-            selector.use = fields
-            return this
-        }
+        fun use(vararg fields: String) = apply { selector.use = fields }
 
-        fun omit(vararg fields: String): Builder<T> {
-            selector.omit = fields
-            return this
-        }
+        fun omit(vararg fields: String) = apply { selector.omit = fields }
 
-        fun useRegex(regex: String): Builder<T> {
-            selector.useRegex = regex
-            return this
-        }
+        fun useRegex(regex: String) = apply { selector.useRegex = regex }
 
-        fun omitRegex(regex: String): Builder<T> {
-            selector.omitRegex = regex
-            return this
-        }
+        fun omitRegex(regex: String) = apply { selector.omitRegex = regex }
 
         fun build() = DataMapper(TypeValues(type, selector))
 

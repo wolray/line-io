@@ -33,10 +33,7 @@ class CsvReader<T> internal constructor(
         LineReader<InputStream, String, T>.Session(input, skipLines) {
         private var cols: Array<String>? = null
 
-        fun csvHeader(vararg cols: String): Session {
-            this.cols = arrayOf(*cols)
-            return this
-        }
+        fun csvHeader(vararg useCols: String) = apply { cols = arrayOf(*useCols) }
 
         override fun preprocess(iterator: Iterator<String>) {
             if (cols.isNullOrEmpty().not()) {
