@@ -92,12 +92,12 @@ public class ValuesConverter<V, T> implements Function<V, T> {
             method.setAccessible(true);
             if (returnType == String.class) {
                 UnaryOperator<String> mapper = s -> (String)invoke(method, s);
-                stream.forEach(c -> c.mapper = mapper);
+                stream.forEach(a -> a.mapper = mapper);
             } else {
                 Function<String, Object> parser = s -> invoke(method, s);
                 stream
-                    .filter(c -> c.field.getType() == returnType)
-                    .forEach(c -> c.parser = parser);
+                    .filter(a -> a.field.getType() == returnType)
+                    .forEach(a -> a.parser = parser);
             }
         }
     }

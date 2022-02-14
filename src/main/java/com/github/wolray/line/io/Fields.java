@@ -8,7 +8,7 @@ import java.lang.annotation.Target;
 /**
  * @author wolray
  */
-@Target({ElementType.TYPE, ElementType.METHOD, ElementType.FIELD})
+@Target({ElementType.TYPE, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface Fields {
     boolean pojo() default false;
