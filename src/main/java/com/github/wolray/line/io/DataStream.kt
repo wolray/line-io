@@ -158,11 +158,10 @@ class DataStream<T> {
                 DataStream { ts.stream() }
             }
 
-
         @JvmStatic
         fun <T> of(supplier: Supplier<Stream<T>>) = DataStream { supplier.get() }
 
         @JvmStatic
-        fun <T> empty(): DataStream<T> = of { Stream.empty() }
+        fun <T> empty(): DataStream<T> = DataStream { Stream.empty() }
     }
 }
