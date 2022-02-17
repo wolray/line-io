@@ -2,7 +2,6 @@ package com.github.wolray.line.io
 
 import com.alibaba.fastjson.JSON
 import org.apache.poi.ss.usermodel.Row
-import org.apache.poi.ss.usermodel.Workbook
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.*
 import java.util.function.Function
@@ -41,9 +40,7 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
 
         override fun toIterator(source: InputStream): Iterator<Row> {
             return try {
-                val workbook: Workbook = XSSFWorkbook(source)
-                val sheet = workbook.getSheetAt(sheetIndex)
-                sheet.iterator()
+                XSSFWorkbook(source).getSheetAt(sheetIndex).iterator()
             } catch (e: IOException) {
                 throw UncheckedIOException(e)
             }
@@ -126,15 +123,17 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
         fun <T> byJson(type: Class<T>) = Text { JSON.parseObject(it, type) }
 
         @JvmStatic
-        fun <T> byCsv(sep: String, type: Class<T>) =
-            CsvReader(ValuesConverter.Text(TypeValues(type)), sep)
+        fun <T> byCsv(sep: String, type: Class<T>): CsvReader<T> {
+            return CsvReader(ValuesConverter.Text(TypeValues(type)), sep)
+        }
 
         @JvmStatic
         fun <T> byExcel(type: Class<T>) = byExcel(0, type)
 
         @JvmStatic
-        fun <T> byExcel(sheetIndex: Int, type: Class<T>) =
-            Excel(sheetIndex, ValuesConverter.Excel(TypeValues(type)))
+        fun <T> byExcel(sheetIndex: Int, type: Class<T>): Excel<T> {
+            return Excel(sheetIndex, ValuesConverter.Excel(TypeValues(type)))
+        }
 
         @JvmStatic
         fun toInputStream(file: String): InputStream? {

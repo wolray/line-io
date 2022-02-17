@@ -21,9 +21,9 @@ class CsvReader<T> internal constructor(
         val slots = header
             .map { list.indexOf(it) }
             .toIntArray()
-        for (i in slots.indices) {
-            if (slots[i] < 0) {
-                throw NoSuchElementException(header[i])
+        slots.zip(header).forEach {
+            if (it.first < 0) {
+                throw NoSuchElementException(it.second)
             }
         }
         reorder(slots)
@@ -44,5 +44,10 @@ class CsvReader<T> internal constructor(
                 super.preprocess(iterator)
             }
         }
+    }
+
+    companion object {
+        @JvmStatic
+        fun <T> of(sep: String, type: Class<T>) = byCsv(sep, type)
     }
 }

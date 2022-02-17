@@ -92,14 +92,17 @@ class DataStream<T> {
     }
 
     @JvmOverloads
-    fun cacheCsv(file: String, type: Class<T>, sep: String = ",") =
-        cacheCsv(file, DataMapper.simple(type, sep))
+    fun cacheCsv(file: String, type: Class<T>, sep: String = ","): DataStream<T> {
+        return cacheCsv(file, DataMapper.simple(type, sep))
+    }
 
-    fun cacheCsv(file: String, mapper: DataMapper<T>) =
-        cacheFile(file, ".csv", mapper::toReader, mapper::toWriter)
+    fun cacheCsv(file: String, mapper: DataMapper<T>): DataStream<T> {
+        return cacheFile(file, ".csv", mapper::toReader, mapper::toWriter)
+    }
 
-    fun cacheJson(file: String, type: Class<T>) =
-        cacheFile(file, ".txt", { LineReader.byJson(type) }, { LineWriter.byJson() })
+    fun cacheJson(file: String, type: Class<T>): DataStream<T> {
+        return cacheFile(file, ".txt", { LineReader.byJson(type) }, { LineWriter.byJson() })
+    }
 
     fun <E> map(mapper: Function<T, E>): DataStream<E> {
         val old = supplier
@@ -151,12 +154,11 @@ class DataStream<T> {
 
     companion object {
         @JvmStatic
-        fun <T> of(ts: Collection<T>) =
-            if (ts is List<*>) {
-                DataStream(ts as List<T>)
-            } else {
-                DataStream { ts.stream() }
-            }
+        fun <T> of(ts: Iterable<T>): DataStream<T> = when (ts) {
+            is List<*> -> DataStream(ts as List<T>)
+            is Collection<*> -> DataStream { (ts as Collection<T>).stream() }
+            else -> DataStream { IteratorHelper.toStream(ts.iterator(), null) }
+        }
 
         @JvmStatic
         fun <T> of(supplier: Supplier<Stream<T>>) = DataStream { supplier.get() }

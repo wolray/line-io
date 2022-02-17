@@ -10,8 +10,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.function.Function
 
 /**
- * @author yilai
- * @since 2022/2/16
+ * @author wolray
  */
 open class LineWriter<T>(private val formatter: Function<T, String>) {
 
@@ -51,8 +50,9 @@ open class LineWriter<T>(private val formatter: Function<T, String>) {
         fun <T> byJson() = LineWriter<T> { JSON.toJSONString(it) }
 
         @JvmStatic
-        fun <T> byCsv(sep: String, type: Class<T>) =
-            CsvWriter(ValuesJoiner(TypeValues(type)), sep)
+        fun <T> byCsv(sep: String, type: Class<T>): CsvWriter<T> {
+            return CsvWriter(ValuesJoiner(TypeValues(type)), sep)
+        }
 
         fun BufferedWriter.writeLine(s: String) {
             write(s)

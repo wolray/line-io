@@ -32,4 +32,9 @@ class CsvWriter<T> internal constructor(
             }
         }
     }
+
+    companion object {
+        @JvmStatic
+        fun <T> of(sep: String, type: Class<T>) = byCsv(sep, type)
+    }
 }
