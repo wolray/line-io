@@ -86,7 +86,7 @@ class DataStream<T> {
         val input = LineReader.toInputStream(f)
         return cacheBy(object : Cache<T> {
             override fun exists() = input != null
-            override fun read() = reader.invoke().read(input).stream()
+            override fun read() = reader.invoke().read(input!!).stream()
             override fun write(ts: List<T>) = writer.invoke().write(f).with(ts)
         })
     }

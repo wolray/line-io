@@ -7,8 +7,6 @@ import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Spliterator;
 import java.util.Spliterators;
-import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
@@ -53,38 +51,6 @@ public class IteratorHelper {
                     return line;
                 } else {
                     throw new NoSuchElementException();
-                }
-            }
-        };
-    }
-
-    public static <V> Consumer<V> twoStage(Consumer<V> head, Consumer<V> rest) {
-        return new Consumer<V>() {
-            boolean isRest = false;
-
-            @Override
-            public void accept(V v) {
-                if (isRest) {
-                    rest.accept(v);
-                } else {
-                    isRest = true;
-                    head.accept(v);
-                }
-            }
-        };
-    }
-
-    public static <V, T> Function<V, T> twoStage(Function<V, T> head, Function<V, T> rest) {
-        return new Function<V, T>() {
-            boolean isRest = false;
-
-            @Override
-            public T apply(V v) {
-                if (isRest) {
-                    return rest.apply(v);
-                } else {
-                    isRest = true;
-                    return head.apply(v);
                 }
             }
         };

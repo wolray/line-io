@@ -22,8 +22,9 @@ public class DemoChnTest {
         InputStream inputStream = LineReader.toInputStream("some-path/person.csv");
         // 设置CSV的分隔符，以及目标class
         List<Person> persons = LineReader.byCsv(",", Person.class)
+            .read(inputStream)
             // 如果不需要第一行的列名信息，可以直接跳过
-            .read(inputStream, 1)
+            .skipLines(1)
             // 如果文件的列名和class的属性顺序不一致，可以手动设置列名，读取时会自动匹配
             .csvHeader("name", "gender", "age", "weight", "height", "phone")
             // 也可以通过下标的方式设置每个属性对应哪一列

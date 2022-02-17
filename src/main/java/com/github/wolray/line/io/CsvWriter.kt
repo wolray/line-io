@@ -1,7 +1,6 @@
 package com.github.wolray.line.io
 
 import java.io.BufferedWriter
-import java.io.IOException
 
 /**
  * @author wolray
@@ -27,7 +26,6 @@ class CsvWriter<T> internal constructor(
             }
         }
 
-        @Throws(IOException::class)
         override fun preprocess(bw: BufferedWriter) {
             if (utf8 && file.endsWith(".csv")) {
                 bw.write('\ufeff'.code)

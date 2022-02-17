@@ -22,8 +22,9 @@ public class DemoTest {
         InputStream inputStream = LineReader.toInputStream("some-path/person.csv");
         // set csv separator and target object class
         List<Person> persons = LineReader.byCsv(",", Person.class)
+            .read(inputStream)
             // skip 1 line if you don't need the header
-            .read(inputStream, 1)
+            .skipLines(1)
             // if you need specify the header (file columns doesn't align with the class fields)
             .csvHeader("name", "gender", "age", "weight", "height", "phone")
             // or you may like to specify the columns by indices
