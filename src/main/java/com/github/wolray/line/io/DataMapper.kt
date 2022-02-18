@@ -53,9 +53,9 @@ class DataMapper<T> @JvmOverloads constructor(
 
         fun build(sep: String) = DataMapper(TypeValues(type, selector), sep)
 
-        fun reader(sep: String) = build(sep).toReader()
+        fun toReader(sep: String) = build(sep).toReader()
 
-        fun writer(sep: String) = build(sep).toWriter()
+        fun toWriter(sep: String) = build(sep).toWriter()
     }
 
     companion object {
