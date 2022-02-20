@@ -85,8 +85,8 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
         }
 
         protected open fun preprocess(iterator: Iterator<V>) {
-            if (slots != null && slots!!.isNotEmpty()) {
-                reorder(slots!!)
+            slots.executeIf({ isNotEmpty() }) {
+                reorder(this)
             }
         }
 

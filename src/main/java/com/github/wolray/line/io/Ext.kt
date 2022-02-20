@@ -11,7 +11,7 @@ import java.util.stream.StreamSupport
 class MutableLazy<T>(private val supplier: Supplier<T>) {
     private var cache: T? = null
 
-    fun get() = cache ?: supplier.get().also { cache = it }
+    fun get() = cache ?: supplier.get().also { set(it) }
 
     fun set(t: T) {
         cache = t
@@ -45,11 +45,13 @@ inline fun <T, K, V> Grouping<T, K>.toSet(vMapper: (T) -> V): MutableMap<K, Muta
     return toSetBy { acc, t -> acc.add(vMapper.invoke(t)) }
 }
 
-inline fun <T, K, V> Grouping<T, K>.toSetBy(appender: (MutableSet<V>, T) -> Unit): MutableMap<K, MutableSet<V>> {
-    return foldBy(HashSet()) { acc, t -> appender.invoke(acc, t) }
+inline fun <T, K, V> Grouping<T, K>.toSetBy(appender: (MutableSet<V>, T) -> Unit):
+        MutableMap<K, MutableSet<V>> {
+    return foldBy(HashSet(), appender)
 }
 
-inline fun <T, K, V> Grouping<T, K>.foldBy(init: V, appender: (V, T) -> Unit): MutableMap<K, V> {
+inline fun <T, K, V> Grouping<T, K>.foldBy(init: V, appender: (V, T) -> Unit):
+        MutableMap<K, V> {
     return foldTo(HashMap(), init) { acc, t ->
         appender.invoke(acc, t)
         acc
@@ -61,6 +63,18 @@ fun <T> List<T>.asMutable() = this as MutableList
 fun <K, V> Map<K, V>.asMutable() = this as MutableMap
 
 fun <T> Set<T>.asMutable() = this as MutableSet
+
+inline fun <T, R> T?.letIf(tester: (T) -> Boolean, block: (T) -> R?): R? {
+    return if (this != null && tester(this)) block(this) else null
+}
+
+inline fun <T, R> T?.runIf(tester: T.() -> Boolean, block: T.() -> R?): R? {
+    return if (this != null && tester()) block() else null
+}
+
+inline fun <T> T?.executeIf(tester: T.() -> Boolean, block: T.() -> Unit): Unit? {
+    return if (this != null && tester()) block() else null
+}
 
 inline fun <T> T.applyIf(condition: Boolean, block: T.() -> Unit): T {
     return if (condition) apply(block) else this
