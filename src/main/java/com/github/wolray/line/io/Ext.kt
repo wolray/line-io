@@ -1,19 +1,20 @@
 package com.github.wolray.line.io
 
 import java.util.*
+import java.util.function.Supplier
 import java.util.stream.Stream
 import java.util.stream.StreamSupport
 
 /**
  * @author wolray
  */
-fun <T> Sequence<T>.enableCache() = object : Cacheable<T, Sequence<T>>() {
-    override val self = this@enableCache
+class MutableLazy<T>(private val supplier: Supplier<T>) {
+    private var cache: T? = null
 
-    override fun toList(): List<T> = self.toDataList()
+    fun get() = cache ?: supplier.get().also { cache = it }
 
-    override fun from(session: LineReader<*, *, T>.Session): Sequence<T> {
-        return session.sequence()
+    fun set(t: T) {
+        cache = t
     }
 }
 
@@ -28,18 +29,38 @@ fun <T> Iterator<T>.toStream(size: Long? = null): Stream<T> {
     return StreamSupport.stream(spliterator, false)
 }
 
+fun <T> Sequence<T>.enableCache() = object : Cacheable<T, Sequence<T>>() {
+    override val self = this@enableCache
+
+    override fun toList(): List<T> = self.toDataList()
+
+    override fun from(session: LineReader<*, *, T>.Session): Sequence<T> {
+        return session.sequence()
+    }
+}
+
 fun <T> Sequence<T>.toDataList(): List<T> = toCollection(DataList())
 
 inline fun <T, K, V> Grouping<T, K>.toSet(vMapper: (T) -> V): MutableMap<K, MutableSet<V>> {
-    return toSet { acc, t -> acc.add(vMapper.invoke(t)) }
+    return toSetBy { acc, t -> acc.add(vMapper.invoke(t)) }
 }
 
-inline fun <T, K, V> Grouping<T, K>.toSet(appender: (MutableSet<V>, T) -> Unit): MutableMap<K, MutableSet<V>> {
-    return foldTo(HashMap(), HashSet()) { acc, t ->
+inline fun <T, K, V> Grouping<T, K>.toSetBy(appender: (MutableSet<V>, T) -> Unit): MutableMap<K, MutableSet<V>> {
+    return foldBy(HashSet()) { acc, t -> appender.invoke(acc, t) }
+}
+
+inline fun <T, K, V> Grouping<T, K>.foldBy(init: V, appender: (V, T) -> Unit): MutableMap<K, V> {
+    return foldTo(HashMap(), init) { acc, t ->
         appender.invoke(acc, t)
         acc
     }
 }
+
+fun <T> List<T>.asMutable() = this as MutableList
+
+fun <K, V> Map<K, V>.asMutable() = this as MutableMap
+
+fun <T> Set<T>.asMutable() = this as MutableSet
 
 inline fun <T> T.applyIf(condition: Boolean, block: T.() -> Unit): T {
     return if (condition) apply(block) else this
