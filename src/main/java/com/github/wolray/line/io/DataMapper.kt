@@ -18,13 +18,9 @@ class DataMapper<T> @JvmOverloads constructor(
         return if (sep == this.sep) this else DataMapper(typeValues, sep)
     }
 
-    fun toParser(sep: String): Function<String, T> {
-        return converter.toParser(sep)
-    }
+    fun toParser(sep: String): Function<String, T> = converter.toParser(sep)
 
-    fun toFormatter(sep: String): Function<T, String> {
-        return joiner.toFormatter(sep)
-    }
+    fun toFormatter(sep: String): Function<T, String> = joiner.toFormatter(sep)
 
     @JvmOverloads
     fun toReader(sep: String = this.sep) = CsvReader(converter, sep)
