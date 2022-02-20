@@ -64,23 +64,33 @@ fun <K, V> Map<K, V>.asMutable() = this as MutableMap
 
 fun <T> Set<T>.asMutable() = this as MutableSet
 
-inline fun <T, R> T?.letIf(tester: (T) -> Boolean, block: (T) -> R?): R? {
-    return if (this != null && tester(this)) block(this) else null
+class Maybe<T>(private val t: T?, test: T.() -> Boolean) {
+    private var b = t != null && t.test()
+
+    fun call(block: T.() -> Unit) = apply {
+        if (b) t!!.block()
+    }
+
+    fun orElse(block: () -> Unit) {
+        if (!b) block()
+    }
+
+    fun <R> toRun(block: T.() -> R): R? {
+        return if (b) t!!.block() else null
+    }
+
+    fun <R> toLet(block: (T) -> R): R? {
+        return if (b) block(t!!) else null
+    }
 }
 
-inline fun <T, R> T?.runIf(tester: T.() -> Boolean, block: T.() -> R?): R? {
-    return if (this != null && tester()) block() else null
-}
-
-inline fun <T> T?.executeIf(tester: T.() -> Boolean, block: T.() -> Unit): Unit? {
-    return if (this != null && tester()) block() else null
-}
+fun <T> T?.testIf(test: T.() -> Boolean) = Maybe(this, test)
 
 inline fun <T> T.applyIf(condition: Boolean, block: T.() -> Unit): T {
     return if (condition) apply(block) else this
 }
 
-inline fun <T, E> T.applyIfExists(e: E?, block: T.(E) -> Unit): T {
+inline fun <T, E> T.applyWith(e: E?, block: T.(E) -> Unit): T {
     return if (e != null) apply { block(e) } else this
 }
 
@@ -88,6 +98,6 @@ inline fun <T> T.unaryIf(condition: Boolean, op: T.() -> T): T {
     return if (condition) op.invoke(this) else this
 }
 
-inline fun <T, E> T.unaryIfExists(e: E?, op: T.(E) -> T): T {
+inline fun <T, E> T.unaryWith(e: E?, op: T.(E) -> T): T {
     return if (e != null) op.invoke(this, e) else this
 }

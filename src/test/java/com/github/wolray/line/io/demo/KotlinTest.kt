@@ -1,10 +1,7 @@
 package com.github.wolray.line.io.demo
 
-import com.github.wolray.line.io.LineReader
+import com.github.wolray.line.io.*
 import com.github.wolray.line.io.LineReader.Companion.toInputStream
-import com.github.wolray.line.io.asMutable
-import com.github.wolray.line.io.enableCache
-import com.github.wolray.line.io.toDataList
 import org.junit.Test
 
 /**

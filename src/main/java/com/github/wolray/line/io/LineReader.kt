@@ -9,16 +9,14 @@ import java.util.function.Function
 /**
  * @author wolray
  */
-open class LineReader<S, V, T> protected constructor(protected val function: Function<V, T>) {
+abstract class LineReader<S, V, T> protected constructor(protected val function: Function<V, T>) {
 
     open fun read(source: S) = Session(source)
 
-    protected open fun toIterator(source: S): Iterator<V> {
-        throw UnsupportedOperationException()
-    }
+    abstract fun toIterator(source: S): Iterator<V>
 
     protected open fun reorder(slots: IntArray) {
-        throw UnsupportedOperationException()
+        throw NotImplementedError()
     }
 
     interface SizedIterator<T> : Iterator<T> {
@@ -85,9 +83,8 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
         }
 
         protected open fun preprocess(iterator: Iterator<V>) {
-            slots.executeIf({ isNotEmpty() }) {
-                reorder(this)
-            }
+            slots.testIf { isNotEmpty() }
+                .call { reorder(this) }
         }
 
         private fun getIterator() = toIterator(source).apply {

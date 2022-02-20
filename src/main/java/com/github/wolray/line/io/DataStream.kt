@@ -89,11 +89,7 @@ class DataStream<T> : Cacheable<T, DataStream<T>> {
     }
 
     fun <K, V> toMap(keyMapper: Function<T, K>, valueMapper: Function<T, V>): Map<K, V> {
-        return toList().run {
-            associateTo(HashMap(size)) {
-                keyMapper.apply(it) to valueMapper.apply(it)
-            }
-        }
+        return toList().associate { keyMapper.apply(it) to valueMapper.apply(it) }
     }
 
     fun <K, V> groupBy(keyMapper: Function<T, K>, collector: Collector<T, *, V>): Map<K, V> {
