@@ -5,7 +5,6 @@ import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.*
 import java.util.function.Function
-import java.util.function.Predicate
 
 /**
  * @author wolray
@@ -22,14 +21,14 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
         throw UnsupportedOperationException()
     }
 
-    interface SizedIterator<T> : MutableIterator<T> {
+    interface SizedIterator<T> : Iterator<T> {
         fun size(): Long
     }
 
     open class Text<T> internal constructor(parser: Function<String, T>) :
         LineReader<InputStream, String, T>(parser) {
         override fun toIterator(source: InputStream): Iterator<String> {
-            return IteratorHelper.toIterator(BufferedReader(InputStreamReader(source)))
+            return BufferedReader(InputStreamReader(source)).lineSequence().iterator()
         }
     }
 
@@ -53,7 +52,6 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
 
     open inner class Session(private val source: S) {
         private var skip: Int = 0
-        private var predicate: Predicate<V>? = null
         private var slots: IntArray? = null
 
         open fun skipLines(n: Int) = apply { skip = n }
@@ -92,26 +90,19 @@ open class LineReader<S, V, T> protected constructor(protected val function: Fun
             }
         }
 
-        fun filter(predicate: Predicate<V>) = filterIf(true, predicate)
-
-        fun filterIf(condition: Boolean, predicate: Predicate<V>) = apply {
-            if (condition) {
-                this.predicate = predicate
-            }
+        private fun getIterator() = toIterator(source).apply {
+            repeat(skip) { next() }
+            preprocess(this)
         }
 
-        fun stream() = DataStream.of {
-            val iterator = toIterator(source)
-            for (i in 0 until skip) {
-                iterator.next()
-            }
-            preprocess(iterator)
-            val size = if (iterator is SizedIterator<*>) iterator.size() else null
-            var stream = IteratorHelper.toStream(iterator, size)
-            if (predicate != null) {
-                stream = stream.filter(predicate)
-            }
-            stream.map(function)
+        fun sequence(): Sequence<T> {
+            return Sequence(::getIterator).map(function::apply)
+        }
+
+        fun stream(): DataStream<T> = DataStream.of {
+            getIterator().run {
+                toStream(if (this is SizedIterator) size() else null)
+            }.map(function)
         }
     }
 

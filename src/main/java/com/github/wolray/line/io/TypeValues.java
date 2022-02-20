@@ -59,7 +59,7 @@ public class TypeValues<T> {
     }
 
     private Stream<Field> getFields(Class<T> type, FieldSelector selector) {
-        if (selector != null && selector.pojo) {
+        if (selector != null && selector.getPojo()) {
             return Arrays.stream(type.getDeclaredFields())
                 .filter(f -> Modifier.isPrivate(f.getModifiers()))
                 .peek(f -> f.setAccessible(true));

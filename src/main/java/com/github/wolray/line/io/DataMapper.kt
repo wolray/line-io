@@ -41,9 +41,9 @@ class DataMapper<T> @JvmOverloads constructor(
 
         fun pojo() = apply { selector.pojo = true }
 
-        fun use(vararg fields: String) = apply { selector.use = fields }
+        fun use(vararg fields: String) = apply { selector.use = arrayOf(*fields) }
 
-        fun omit(vararg fields: String) = apply { selector.omit = fields }
+        fun omit(vararg fields: String) = apply { selector.omit = arrayOf(*fields) }
 
         fun useRegex(regex: String) = apply { selector.useRegex = regex }
 

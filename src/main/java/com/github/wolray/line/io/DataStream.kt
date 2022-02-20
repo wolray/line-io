@@ -9,7 +9,8 @@ import java.util.stream.Stream
 /**
  * @author wolray
  */
-class DataStream<T> {
+class DataStream<T> : Cacheable<T, DataStream<T>> {
+    override val self = this
     private var ts: List<T>? = null
     private var supplier: (() -> Stream<T>)? = null
 
@@ -34,6 +35,10 @@ class DataStream<T> {
         }
     }
 
+    override fun from(session: LineReader<*, *, T>.Session): DataStream<T> {
+        return session.stream()
+    }
+
     private fun mod(op: (Stream<T>) -> Stream<T>): DataStream<T> {
         val old = supplier
         val next = { op.invoke(old!!.invoke()) }
@@ -51,57 +56,8 @@ class DataStream<T> {
 
     fun filter(predicate: Predicate<T>) = mod { it.filter(predicate) }
 
-    fun consumeIf(condition: Boolean, consumer: Consumer<DataStream<T>>): DataStream<T> {
-        if (condition) {
-            consumer.accept(this)
-            if (isReusable().not()) {
-                return empty()
-            }
-        }
-        return this
-    }
-
     fun operateIf(condition: Boolean, op: UnaryOperator<DataStream<T>>): DataStream<T> {
         return if (condition) op.apply(this) else this
-    }
-
-    fun cacheBy(cache: Cache<T>): DataStream<T> {
-        return if (cache.exists()) {
-            cache.read()
-        } else {
-            val ts = toList()
-            if (ts.isNotEmpty()) {
-                cache.write(ts)
-            }
-            this
-        }
-    }
-
-    private fun cacheFile(
-        file: String, suffix: String,
-        reader: () -> LineReader.Text<T>,
-        writer: () -> LineWriter<T>
-    ): DataStream<T> {
-        val f = if (file.endsWith(suffix)) file else file + suffix
-        val input = LineReader.toInputStream(f)
-        return cacheBy(object : Cache<T> {
-            override fun exists() = input != null
-            override fun read() = reader.invoke().read(input!!).stream()
-            override fun write(ts: List<T>) = writer.invoke().write(f).with(ts)
-        })
-    }
-
-    @JvmOverloads
-    fun cacheCsv(file: String, type: Class<T>, sep: String = ","): DataStream<T> {
-        return cacheCsv(file, DataMapper.simple(type, sep))
-    }
-
-    fun cacheCsv(file: String, mapper: DataMapper<T>): DataStream<T> {
-        return cacheFile(file, ".csv", mapper::toReader, mapper::toWriter)
-    }
-
-    fun cacheJson(file: String, type: Class<T>): DataStream<T> {
-        return cacheFile(file, ".txt", { LineReader.byJson(type) }, { LineWriter.byJson() })
     }
 
     fun <E> map(mapper: Function<T, E>): DataStream<E> {
@@ -121,7 +77,7 @@ class DataStream<T> {
         toList().parallelStream().forEach(action)
     }
 
-    fun toList(): List<T> {
+    override fun toList(): List<T> {
         reuse()
         return ts!!
     }
@@ -129,16 +85,14 @@ class DataStream<T> {
     fun toArrayList() = ArrayList(toList())
 
     fun <K> toSet(mapper: Function<T, K>): Set<K> {
-        val ts = toList()
-        return HashSet<K>(ts.size).apply {
-            ts.forEach { add(mapper.apply(it)) }
-        }
+        return toList().run { mapTo(HashSet(size), mapper::apply) }
     }
 
     fun <K, V> toMap(keyMapper: Function<T, K>, valueMapper: Function<T, V>): Map<K, V> {
-        val ts = toList()
-        return HashMap<K, V>(ts.size).apply {
-            ts.forEach { this[keyMapper.apply(it)] = valueMapper.apply(it) }
+        return toList().run {
+            associateTo(HashMap(size)) {
+                keyMapper.apply(it) to valueMapper.apply(it)
+            }
         }
     }
 
@@ -146,18 +100,12 @@ class DataStream<T> {
         return supplier!!.invoke().collect(Collectors.groupingBy(keyMapper, collector))
     }
 
-    interface Cache<T> {
-        fun exists(): Boolean
-        fun read(): DataStream<T>
-        fun write(ts: List<T>)
-    }
-
     companion object {
         @JvmStatic
         fun <T> of(ts: Iterable<T>): DataStream<T> = when (ts) {
-            is List<*> -> DataStream(ts as List<T>)
-            is Collection<*> -> DataStream { (ts as Collection<T>).stream() }
-            else -> DataStream { IteratorHelper.toStream(ts.iterator(), null) }
+            is List -> DataStream(ts)
+            is Collection -> DataStream { ts.stream() }
+            else -> DataStream { ts.iterator().toStream() }
         }
 
         @JvmStatic

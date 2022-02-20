@@ -4,6 +4,7 @@ import com.github.wolray.line.io.DataStream;
 import com.github.wolray.line.io.Fields;
 import com.github.wolray.line.io.LineReader;
 import com.github.wolray.line.io.LineWriter;
+import lombok.Getter;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -80,7 +81,7 @@ public class DemoTest {
         public Integer age;
         public Double weight;
         public Double height;
-        private Double weightHeightRatio;
+        public Double weightHeightRatio;
     }
 
     /**

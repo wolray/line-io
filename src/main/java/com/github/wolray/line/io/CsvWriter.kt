@@ -12,8 +12,7 @@ class CsvWriter<T> internal constructor(
 
     override fun write(file: String) = Session(file)
 
-    inner class Session internal constructor(file: String) :
-        LineWriter<T>.Session(file) {
+    inner class Session internal constructor(file: String) : LineWriter<T>.Session(file) {
         private var utf8 = false
 
         fun markUtf8() = apply { utf8 = true }
