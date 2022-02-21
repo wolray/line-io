@@ -83,8 +83,9 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
         }
 
         protected open fun preprocess(iterator: Iterator<V>) {
-            slots.testIf { isNotEmpty() }
-                .call { reorder(this) }
+            slots.runIf({ isNotEmpty() }) {
+                reorder(this)
+            }
         }
 
         private fun getIterator() = toIterator(source).apply {

@@ -46,12 +46,12 @@ inline fun <T, K, V> Grouping<T, K>.toSet(vMapper: (T) -> V): MutableMap<K, Muta
 }
 
 inline fun <T, K, V> Grouping<T, K>.toSetBy(appender: (MutableSet<V>, T) -> Unit):
-        MutableMap<K, MutableSet<V>> {
+    MutableMap<K, MutableSet<V>> {
     return foldBy(HashSet(), appender)
 }
 
 inline fun <T, K, V> Grouping<T, K>.foldBy(init: V, appender: (V, T) -> Unit):
-        MutableMap<K, V> {
+    MutableMap<K, V> {
     return foldTo(HashMap(), init) { acc, t ->
         appender.invoke(acc, t)
         acc
@@ -64,33 +64,18 @@ fun <K, V> Map<K, V>.asMutable() = this as MutableMap
 
 fun <T> Set<T>.asMutable() = this as MutableSet
 
-class Maybe<T>(private val t: T?, test: T.() -> Boolean) {
-    private var b = t != null && t.test()
+inline fun <T> T?.test(test: T.() -> Boolean): Boolean {
+    return this != null && test()
 
-    fun call(block: T.() -> Unit) = apply {
-        if (b) t!!.block()
-    }
-
-    fun orElse(block: () -> Unit) {
-        if (!b) block()
-    }
-
-    fun <R> toRun(block: T.() -> R): R? {
-        return if (b) t!!.block() else null
-    }
-
-    fun <R> toLet(block: (T) -> R): R? {
-        return if (b) block(t!!) else null
-    }
+inline fun <T, R> T?.runIf(test: T.() -> Boolean, block: T.() -> R): R? {
+    return if (this != null && test()) block() else null
 }
 
-fun <T> T?.testIf(test: T.() -> Boolean) = Maybe(this, test)
-
-inline fun <T> T.applyIf(condition: Boolean, block: T.() -> Unit): T {
+inline fun <T> T.useIf(condition: Boolean, block: T.() -> Unit): T {
     return if (condition) apply(block) else this
 }
 
-inline fun <T, E> T.applyWith(e: E?, block: T.(E) -> Unit): T {
+inline fun <T, E> T.useWith(e: E?, block: T.(E) -> Unit): T {
     return if (e != null) apply { block(e) } else this
 }
 

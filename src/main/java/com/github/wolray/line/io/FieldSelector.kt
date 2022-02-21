@@ -35,7 +35,7 @@ internal class FieldSelector {
 
     companion object {
         @JvmStatic
-        fun of(fields: Fields?) = FieldSelector().applyWith(fields) {
+        fun of(fields: Fields?) = FieldSelector().useWith(fields) {
             pojo = it.pojo
             use = it.use
             omit = it.omit

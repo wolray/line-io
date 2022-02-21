@@ -38,9 +38,9 @@ class CsvReader<T> internal constructor(
         fun csvHeader(vararg useCols: String) = apply { cols = arrayOf(*useCols) }
 
         override fun preprocess(iterator: Iterator<String>) {
-            cols.testIf { isNotEmpty() }
-                .call { setHeader(iterator.next(), this) }
-                .orElse { super.preprocess(iterator) }
+            cols.runIf({ isNotEmpty() }) {
+                setHeader(iterator.next(), this)
+            } ?: super.preprocess(iterator)
         }
     }
 

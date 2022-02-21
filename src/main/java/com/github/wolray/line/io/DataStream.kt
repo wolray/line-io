@@ -66,11 +66,7 @@ class DataStream<T> : Cacheable<T, DataStream<T>> {
     }
 
     fun forEach(action: Consumer<T>) {
-        if (isReusable()) {
-            ts!!.forEach(action)
-        } else {
-            supplier!!.invoke().forEach(action)
-        }
+        ts?.forEach(action) ?: supplier!!.invoke().forEach(action)
     }
 
     fun parallelFor(action: Consumer<T>) {
