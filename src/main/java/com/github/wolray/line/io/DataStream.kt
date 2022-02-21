@@ -10,7 +10,6 @@ import java.util.stream.Stream
  * @author wolray
  */
 class DataStream<T> : Cacheable<T, DataStream<T>> {
-    override val self = this
     private var ts: List<T>? = null
     private var supplier: (() -> Stream<T>)? = null
 
@@ -38,6 +37,8 @@ class DataStream<T> : Cacheable<T, DataStream<T>> {
     override fun from(session: LineReader<*, *, T>.Session): DataStream<T> {
         return session.stream()
     }
+
+    override fun after() = this
 
     private fun mod(op: (Stream<T>) -> Stream<T>): DataStream<T> {
         val old = supplier

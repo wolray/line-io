@@ -30,13 +30,19 @@ fun <T> Iterator<T>.toStream(size: Long? = null): Stream<T> {
 }
 
 fun <T> Sequence<T>.enableCache() = object : Cacheable<T, Sequence<T>>() {
-    override val self = this@enableCache
-
-    override fun toList(): List<T> = self.toDataList()
+    private var seq = this@enableCache
 
     override fun from(session: LineReader<*, *, T>.Session): Sequence<T> {
         return session.sequence()
     }
+
+    override fun toList(): List<T> {
+        return seq.toDataList().apply {
+            seq = Sequence { iterator() }
+        }
+    }
+
+    override fun after() = seq
 }
 
 fun <T> Sequence<T>.toDataList(): List<T> = toCollection(DataList())

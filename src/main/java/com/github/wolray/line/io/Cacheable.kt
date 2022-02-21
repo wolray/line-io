@@ -4,10 +4,10 @@ package com.github.wolray.line.io
  * @author wolray
  */
 abstract class Cacheable<T, S> {
-    abstract val self: S
-    abstract fun toList(): List<T>
     abstract fun from(session: LineReader<*, *, T>.Session): S
-
+    abstract fun toList(): List<T>
+    abstract fun after(): S
+    
     fun cacheBy(cache: Cache<T>): S {
         return if (cache.exists()) {
             from(cache.read())
@@ -16,7 +16,7 @@ abstract class Cacheable<T, S> {
             if (ts.isNotEmpty()) {
                 cache.write(ts)
             }
-            self
+            after()
         }
     }
 
