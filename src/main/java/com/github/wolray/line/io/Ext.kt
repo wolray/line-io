@@ -66,6 +66,7 @@ fun <T> Set<T>.asMutable() = this as MutableSet
 
 inline fun <T> T?.test(test: T.() -> Boolean): Boolean {
     return this != null && test()
+}
 
 inline fun <T, R> T?.runIf(test: T.() -> Boolean, block: T.() -> R): R? {
     return if (this != null && test()) block() else null
