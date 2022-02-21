@@ -32,20 +32,19 @@ fun <T> Iterator<T>.toStream(size: Long? = null): Stream<T> {
 fun <T> Sequence<T>.enableCache() = object : Cacheable<T, Sequence<T>>() {
     private var seq = this@enableCache
 
-    override fun from(session: LineReader<*, *, T>.Session): Sequence<T> {
-        return session.sequence()
-    }
+    override fun from(session: LineReader<*, *, T>.Session) = session.sequence()
 
-    override fun toList(): List<T> {
-        return seq.toDataList().apply {
-            seq = Sequence { iterator() }
-        }
-    }
+    override fun toList() = seq.toDataList().also { seq = CachedSequence(it) }
 
     override fun after() = seq
 }
 
-fun <T> Sequence<T>.toDataList(): List<T> = toCollection(DataList())
+class CachedSequence<T>(internal val ts: List<T>) : Sequence<T> by ts.asSequence()
+
+fun <T> Sequence<T>.toDataList(): List<T> = when (this) {
+    is CachedSequence<T> -> ts
+    else -> toCollection(DataList())
+}
 
 inline fun <T, K, V> Grouping<T, K>.toSet(vMapper: (T) -> V): MutableMap<K, MutableSet<V>> {
     return toSetBy { acc, t -> acc.add(vMapper.invoke(t)) }

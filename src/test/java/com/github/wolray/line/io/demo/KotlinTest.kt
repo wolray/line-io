@@ -10,6 +10,11 @@ import org.junit.Test
 class KotlinTest {
     @Test
     fun demo() {
+        val list = listOf(1,2,3,4,5)
+        val ls1 = CachedSequence(list).toDataList()
+        val ls2 = CachedSequence(list).toList()
+        println(list)
+
         val map = (0..9).associate { it + 10 to it + 100 }
         println(map)
         map.asMutable()[233] = 233

@@ -7,7 +7,7 @@ abstract class Cacheable<T, S> {
     abstract fun from(session: LineReader<*, *, T>.Session): S
     abstract fun toList(): List<T>
     abstract fun after(): S
-    
+
     fun cacheBy(cache: Cache<T>): S {
         return if (cache.exists()) {
             from(cache.read())
