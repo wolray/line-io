@@ -73,22 +73,28 @@ inline fun <T> T?.test(test: T.() -> Boolean): Boolean {
     return this != null && test()
 }
 
-inline fun <T, R> T?.runIf(test: T.() -> Boolean, block: T.() -> R): R? {
-    return if (this != null && test()) block() else null
+infix fun <T> Boolean.then(t: T): T? {
+    return if (this) t else null
+}
+
+infix fun <T> Boolean.then(block: () -> T): T? {
+    return if (this) block() else null
 }
 
 inline fun <T> T.useIf(condition: Boolean, block: T.() -> Unit): T {
-    return if (condition) apply(block) else this
+    if (condition) block()
+    return this
 }
 
 inline fun <T, E> T.useWith(e: E?, block: T.(E) -> Unit): T {
-    return if (e != null) apply { block(e) } else this
+    if (e != null) block(e)
+    return this
 }
 
-inline fun <T> T.unaryIf(condition: Boolean, op: T.() -> T): T {
-    return if (condition) op.invoke(this) else this
+inline fun <T> T.unaryIf(condition: Boolean, block: T.() -> T): T {
+    return if (condition) block() else this
 }
 
-inline fun <T, E> T.unaryWith(e: E?, op: T.(E) -> T): T {
-    return if (e != null) op.invoke(this, e) else this
+inline fun <T, E> T.unaryWith(e: E?, block: T.(E) -> T): T {
+    return if (e != null) block(e) else this
 }
