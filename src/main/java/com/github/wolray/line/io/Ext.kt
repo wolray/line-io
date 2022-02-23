@@ -69,32 +69,28 @@ fun <K, V> Map<K, V>.asMutable() = this as MutableMap
 
 fun <T> Set<T>.asMutable() = this as MutableSet
 
-inline fun <T> T?.test(test: T.() -> Boolean): Boolean {
-    return this != null && test()
-}
-
-infix fun <T> Boolean.then(t: T): T? {
-    return if (this) t else null
-}
-
-infix fun <T> Boolean.then(block: () -> T): T? {
-    return if (this) block() else null
-}
-
-inline fun <T> T.useIf(condition: Boolean, block: T.() -> Unit): T {
+inline fun <T> T.useIf(condition: Boolean, block: T.() -> Unit) = apply {
     if (condition) block()
-    return this
 }
 
-inline fun <T, E> T.useWith(e: E?, block: T.(E) -> Unit): T {
+inline fun <T, E> T.useWith(e: E?, block: T.(E) -> Unit) = apply {
     if (e != null) block(e)
-    return this
 }
 
-inline fun <T> T.unaryIf(condition: Boolean, block: T.() -> T): T {
+inline fun <T> T.operateIf(condition: Boolean, block: T.() -> T): T {
     return if (condition) block() else this
 }
 
-inline fun <T, E> T.unaryWith(e: E?, block: T.(E) -> T): T {
+inline fun <T, E> T.operateWith(e: E?, block: T.(E) -> T): T {
     return if (e != null) block(e) else this
+}
+
+inline fun <T> getInMillis(block: () -> T): Pair<T, Long> {
+    val start = System.currentTimeMillis()
+    val t = block()
+    return t to System.currentTimeMillis() - start
+}
+
+inline fun <T> T.println(block: (T) -> String) = apply {
+    println(block(this))
 }

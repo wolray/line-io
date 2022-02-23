@@ -63,27 +63,25 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
         fun columns(vararg slots: Int) = apply { this.slots = slots }
 
         fun columns(excelCols: String?) = apply {
-            if (excelCols.isNullOrEmpty()) {
-                slots = IntArray(0)
+            slots = if (excelCols.isNullOrEmpty()) {
+                IntArray(0)
             } else {
-                val split = excelCols.split(",".toRegex())
                 val a = 'A'
-                slots = IntArray(split.size).apply {
-                    for (i in split.indices) {
-                        val col = split[i].trim { it <= ' ' }
-                        val j = col[0] - a
+                excelCols.split(",".toRegex())
+                    .map {
+                        val col = it.trim()
+                        val j = it[0] - a
                         if (col.length > 1) {
-                            this[i] = (j + 1) * 26 + col[1].code - a.code
+                            (j + 1) * 26 + col[1].code - a.code
                         } else {
-                            this[i] = j
+                            j
                         }
-                    }
-                }
+                    }.toIntArray()
             }
         }
 
         protected open fun preprocess(iterator: Iterator<V>) {
-            slots?.also { it.isNotEmpty() then reorder(it) }
+            slots?.also { if (it.isNotEmpty()) reorder(it) }
         }
 
         private fun getIterator() = toIterator(source).apply {

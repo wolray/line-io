@@ -18,15 +18,14 @@ class CsvReader<T> internal constructor(
 
     private fun setHeader(s: String, header: Array<String>) {
         val list = s.split(sep.toRegex())
-        val slots = header
-            .map { list.indexOf(it) }
-            .toIntArray()
-        slots.zip(header).forEach {
-            if (it.first < 0) {
-                throw NoSuchElementException(it.second)
+        header
+            .map {
+                list.indexOf(it).apply {
+                    if (this < 0) throw NoSuchElementException(it)
+                }
             }
-        }
-        reorder(slots)
+            .toIntArray()
+            .also { reorder(it) }
     }
 
     inner class Session internal constructor(input: InputStream) :
@@ -38,7 +37,7 @@ class CsvReader<T> internal constructor(
         fun csvHeader(vararg useCols: String) = apply { cols = arrayOf(*useCols) }
 
         override fun preprocess(iterator: Iterator<String>) {
-            cols?.also { it.isNotEmpty() then setHeader(iterator.next(), it) }
+            cols?.also { if (it.isNotEmpty()) setHeader(iterator.next(), it) }
                 ?: super.preprocess(iterator)
         }
     }

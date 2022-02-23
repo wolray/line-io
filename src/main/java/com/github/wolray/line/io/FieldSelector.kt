@@ -45,7 +45,7 @@ internal class FieldSelector {
 
         @JvmStatic
         fun toPredicate(fields: Fields?): Predicate<Field> {
-            return if (fields == null) Predicate { true } else of(fields).toPredicate()
+            return fields?.let { of(it).toPredicate() } ?: Predicate { true }
         }
     }
 }

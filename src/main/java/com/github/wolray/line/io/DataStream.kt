@@ -34,9 +34,7 @@ class DataStream<T> : Cacheable<T, DataStream<T>> {
         }
     }
 
-    override fun from(session: LineReader<*, *, T>.Session): DataStream<T> {
-        return session.stream()
-    }
+    override fun from(session: LineReader<*, *, T>.Session) = session.stream()
 
     override fun after() = this
 

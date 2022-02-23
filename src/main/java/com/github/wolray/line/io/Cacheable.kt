@@ -12,10 +12,7 @@ abstract class Cacheable<T, S> {
         return if (cache.exists()) {
             from(cache.read())
         } else {
-            val ts = toList()
-            if (ts.isNotEmpty()) {
-                cache.write(ts)
-            }
+            toList().also { if (it.isNotEmpty()) cache.write(it) }
             after()
         }
     }
