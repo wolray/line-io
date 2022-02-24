@@ -1,5 +1,8 @@
 package com.github.wolray.line.io
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.util.*
 import java.util.function.Supplier
 import java.util.stream.Stream
@@ -63,6 +66,21 @@ inline fun <T, K, V> Grouping<T, K>.foldBy(init: V, appender: (V, T) -> Unit):
     }
 }
 
+@JvmOverloads
+inline fun <T, K> Grouping<T, K>.sumInt(init: Int = 0, block: (T) -> Int): Map<K, Int> {
+    return fold(init) { acc, t -> acc + block(t) }
+}
+
+@JvmOverloads
+inline fun <T, K> Grouping<T, K>.sumDouble(init: Double = 0.0, block: (T) -> Double): Map<K, Double> {
+    return fold(init) { acc, t -> acc + block(t) }
+}
+
+@JvmOverloads
+inline fun <T, K> Grouping<T, K>.sumLong(init: Long = 0, block: (T) -> Long): Map<K, Long> {
+    return fold(init) { acc, t -> acc + block(t) }
+}
+
 fun <T> List<T>.asMutable() = this as MutableList
 
 fun <K, V> Map<K, V>.asMutable() = this as MutableMap
@@ -96,16 +114,10 @@ inline fun <T> T.println(block: (T) -> String) = apply {
 }
 
 @JvmOverloads
-inline fun <T, K> Grouping<T, K>.sumInt(init: Int = 0, block: (T) -> Int): Map<K, Int> {
-    return fold(init) { acc, t -> acc + block(t) }
-}
-
-@JvmOverloads
-inline fun <T, K> Grouping<T, K>.sumDouble(init: Double = 0.0, block: (T) -> Double): Map<K, Double> {
-    return fold(init) { acc, t -> acc + block(t) }
-}
-
-@JvmOverloads
-inline fun <T, K> Grouping<T, K>.sumLong(init: Long = 0, block: (T) -> Long): Map<K, Long> {
-    return fold(init) { acc, t -> acc + block(t) }
+inline fun <T> Iterable<T>.parallelLaunch(io: Boolean = true, crossinline block: (T) -> Unit) {
+    runBlocking(if (io) Dispatchers.IO else Dispatchers.Default) {
+        forEach {
+            launch { block(it) }
+        }
+    }
 }
