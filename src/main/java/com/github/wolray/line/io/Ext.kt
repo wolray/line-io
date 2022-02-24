@@ -94,3 +94,18 @@ inline fun <T> getInMillis(block: () -> T): Pair<T, Long> {
 inline fun <T> T.println(block: (T) -> String) = apply {
     println(block(this))
 }
+
+@JvmOverloads
+inline fun <T, K> Grouping<T, K>.sumInt(init: Int = 0, block: (T) -> Int): Map<K, Int> {
+    return fold(init) { acc, t -> acc + block(t) }
+}
+
+@JvmOverloads
+inline fun <T, K> Grouping<T, K>.sumDouble(init: Double = 0.0, block: (T) -> Double): Map<K, Double> {
+    return fold(init) { acc, t -> acc + block(t) }
+}
+
+@JvmOverloads
+inline fun <T, K> Grouping<T, K>.sumLong(init: Long = 0, block: (T) -> Long): Map<K, Long> {
+    return fold(init) { acc, t -> acc + block(t) }
+}
