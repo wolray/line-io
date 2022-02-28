@@ -113,11 +113,24 @@ inline fun <T> T.println(block: (T) -> String) = apply {
     println(block(this))
 }
 
-@JvmOverloads
-inline fun <T> Iterable<T>.parallelLaunch(io: Boolean = true, crossinline block: (T) -> Unit) {
-    runBlocking(if (io) Dispatchers.IO else Dispatchers.Default) {
+inline fun <T> Iterable<T>.parallelLaunch(crossinline block: (T) -> Unit) {
+    runBlocking(Dispatchers.IO) {
         forEach {
             launch { block(it) }
         }
     }
+}
+
+infix fun Boolean.onTrue(block: () -> Unit): Boolean {
+    if (this) {
+        block()
+    }
+    return this
+}
+
+infix fun Boolean.onFalse(block: () -> Unit): Boolean {
+    if (not()) {
+        block()
+    }
+    return this
 }
