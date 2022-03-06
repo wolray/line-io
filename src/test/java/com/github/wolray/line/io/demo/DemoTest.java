@@ -4,7 +4,6 @@ import com.github.wolray.line.io.DataStream;
 import com.github.wolray.line.io.Fields;
 import com.github.wolray.line.io.LineReader;
 import com.github.wolray.line.io.LineWriter;
-import lombok.Getter;
 import org.junit.Test;
 
 import java.io.InputStream;

@@ -5,6 +5,7 @@ import java.util.function.Function
 import java.util.stream.Collector
 import java.util.stream.Collectors
 import java.util.stream.Stream
+import kotlin.streams.asStream
 
 /**
  * @author wolray
@@ -59,6 +60,10 @@ class DataStream<T> : Cacheable<T, DataStream<T>> {
         return if (condition) op.apply(this) else this
     }
 
+    fun <E> operateWith(e: E?, op: BiFunction<DataStream<T>, E, DataStream<T>>): DataStream<T> {
+        return if (e != null) op.apply(this, e) else this
+    }
+
     fun <E> map(mapper: Function<T, E>): DataStream<E> {
         val old = supplier
         return DataStream { old!!.invoke().map(mapper) }
@@ -96,7 +101,7 @@ class DataStream<T> : Cacheable<T, DataStream<T>> {
         fun <T> of(ts: Iterable<T>): DataStream<T> = when (ts) {
             is List -> DataStream(ts)
             is Collection -> DataStream { ts.stream() }
-            else -> DataStream { ts.iterator().toStream() }
+            else -> DataStream { ts.asSequence().asStream() }
         }
 
         @JvmStatic

@@ -1,5 +1,6 @@
 package com.github.wolray.line.io
 
+import com.github.wolray.line.io.ext.useWith
 import java.lang.reflect.Field
 import java.util.function.Predicate
 

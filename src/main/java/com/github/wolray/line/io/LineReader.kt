@@ -5,6 +5,7 @@ import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.*
 import java.util.function.Function
+import kotlin.streams.asStream
 
 /**
  * @author wolray
@@ -17,10 +18,6 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
 
     protected open fun reorder(slots: IntArray) {
         throw NotImplementedError()
-    }
-
-    interface SizedIterator<T> : Iterator<T> {
-        fun size(): Long
     }
 
     open class Text<T> internal constructor(parser: Function<String, T>) :
@@ -94,9 +91,7 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
         }
 
         fun stream(): DataStream<T> = DataStream.of {
-            getIterator().run {
-                toStream(if (this is SizedIterator) size() else null)
-            }.map(function)
+            getIterator().asSequence().asStream().map(function)
         }
     }
 
