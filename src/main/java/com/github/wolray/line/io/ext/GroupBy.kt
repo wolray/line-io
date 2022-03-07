@@ -12,14 +12,6 @@ inline fun <T, K, V> Grouping<T, K>.toSet(
 }
 
 @JvmOverloads
-inline fun <T, K, V> Grouping<T, K>.toSetBy(
-    des: MutableSet<V> = HashSet(),
-    appender: MutableSet<V>.(T) -> Unit
-): MutableMap<K, MutableSet<V>> {
-    return foldBy(des, appender)
-}
-
-@JvmOverloads
 inline fun <T, K1, K2, V> Grouping<T, K1>.associate(
     des: MutableMap<K2, V> = HashMap(),
     transformer: (T) -> Pair<K2, V>
