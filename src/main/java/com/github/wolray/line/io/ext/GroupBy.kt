@@ -35,9 +35,9 @@ inline fun <T, K, V> Grouping<T, K>.associateWith(
     return foldBy(des) { put(it, valueSelector(it)) }
 }
 
-inline fun <T, K, V> Grouping<T, K>.foldBy(init: V, appender: V.(T) -> Unit):
+inline fun <T, K, V> Grouping<T, K>.foldBy(des: V, appender: V.(T) -> Unit):
     MutableMap<K, V> {
-    return foldTo(HashMap(), init) { acc, t ->
+    return foldTo(HashMap(), des) { acc, t ->
         acc.appender(t)
         acc
     }
