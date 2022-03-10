@@ -1,20 +1,8 @@
 package com.github.wolray.line.io.ext
 
-import java.util.function.Supplier
-
 /**
  * @author wolray
  */
-class MutableLazy<T>(private val supplier: Supplier<T>) {
-    private var cache: T? = null
-
-    fun get() = cache ?: supplier.get().also { set(it) }
-
-    fun set(t: T) {
-        cache = t
-    }
-}
-
 fun <T> List<T>.asMutable() = this as MutableList
 fun <K, V> Map<K, V>.asMutable() = this as MutableMap
 fun <T> Set<T>.asMutable() = this as MutableSet

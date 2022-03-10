@@ -81,6 +81,7 @@ public class TypeValues<T> {
     }
 
     public static class Attr {
+        private static final String EMPTY_STRING = "";
         public final Field field;
         UnaryOperator<String> mapper;
         Function<String, ?> parser;
@@ -98,15 +99,15 @@ public class TypeValues<T> {
         }
 
         public Object parse(String s) {
-            return !s.isEmpty() ? parser.apply(s) : null;
+            return safeApply(parser, s);
         }
 
         public Object convert(Object o) {
-            return o != null ? function.apply(o) : null;
+            return safeApply(function, o);
         }
 
         public String format(Object o) {
-            return o != null ? formatter.apply(o) : "";
+            return safeApply(formatter, o, EMPTY_STRING);
         }
 
         void set(Object t, Object o) {
@@ -124,5 +125,18 @@ public class TypeValues<T> {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private static <S, T> T safeApply(Function<S, T> function, S s) {
+        return safeApply(function, s, null);
+    }
+
+    private static <S, T> T safeApply(Function<S, T> function, S s, T defaultValue) {
+        if (s != null) {
+            try {
+                return function.apply(s);
+            } catch (Throwable ignore) {}
+        }
+        return defaultValue;
     }
 }
