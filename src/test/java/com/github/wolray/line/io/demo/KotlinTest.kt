@@ -1,11 +1,11 @@
 package com.github.wolray.line.io.demo
 
-import com.github.wolray.line.io.*
+import com.github.wolray.line.io.CachedSequence
+import com.github.wolray.line.io.LineReader
 import com.github.wolray.line.io.LineReader.Companion.toInputStream
-import com.github.wolray.line.io.ext.CachedSequence
+import com.github.wolray.line.io.enableCache
 import com.github.wolray.line.io.ext.asMutable
-import com.github.wolray.line.io.ext.enableCache
-import com.github.wolray.line.io.ext.toDataList
+import com.github.wolray.line.io.toDataList
 import org.junit.Test
 
 /**
@@ -14,7 +14,7 @@ import org.junit.Test
 class KotlinTest {
     @Test
     fun demo() {
-        val list = listOf(1,2,3,4,5)
+        val list = listOf(1, 2, 3, 4, 5)
         val ls1 = CachedSequence(list).toDataList()
         val ls2 = CachedSequence(list).toList()
         println(list)
