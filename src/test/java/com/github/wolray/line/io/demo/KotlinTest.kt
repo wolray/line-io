@@ -1,8 +1,7 @@
 package com.github.wolray.line.io.demo
 
 import com.github.wolray.line.io.CachedSequence
-import com.github.wolray.line.io.LineReader
-import com.github.wolray.line.io.LineReader.Companion.toInputStream
+import com.github.wolray.line.io.CsvReader
 import com.github.wolray.line.io.enableCache
 import com.github.wolray.line.io.ext.asMutable
 import com.github.wolray.line.io.toDataList
@@ -24,9 +23,8 @@ class KotlinTest {
         map.asMutable()[233] = 233
         println(map)
 
-        val inputStream = toInputStream("some-path/person.csv")
-        val persons = LineReader.byCsv(",", DemoTest.Person::class.java)
-            .read(inputStream!!)
+        val persons = CsvReader.of(",", DemoTest.Person::class.java)
+            .read("some-path/person.csv")
             .skipLines(1)
             .csvHeader("name", "gender", "age", "weight", "height", "phone")
             .columns(0, 1, 2, 4, 6, 8)

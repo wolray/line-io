@@ -5,6 +5,7 @@ import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.*
 import java.util.function.Function
+import java.util.function.Supplier
 import kotlin.streams.asStream
 
 /**
@@ -21,20 +22,21 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
     }
 
     open class Text<T> internal constructor(parser: Function<String, T>) :
-        LineReader<InputStream, String, T>(parser) {
-        override fun toIterator(source: InputStream): Iterator<String> {
-            return BufferedReader(InputStreamReader(source)).lineSequence().iterator()
+        LineReader<Supplier<InputStream>, String, T>(parser) {
+
+        override fun toIterator(source: Supplier<InputStream>): Iterator<String> {
+            return BufferedReader(InputStreamReader(source.get())).lineSequence().iterator()
         }
     }
 
     class Excel<T> internal constructor(
         private val sheetIndex: Int,
         converter: ValuesConverter.Excel<T>
-    ) : LineReader<InputStream, Row, T>(converter) {
+    ) : LineReader<Supplier<InputStream>, Row, T>(converter) {
 
-        override fun toIterator(source: InputStream): Iterator<Row> {
+        override fun toIterator(source: Supplier<InputStream>): Iterator<Row> {
             return try {
-                XSSFWorkbook(source).getSheetAt(sheetIndex).iterator()
+                XSSFWorkbook(source.get()).getSheetAt(sheetIndex).iterator()
             } catch (e: IOException) {
                 throw UncheckedIOException(e)
             }
@@ -53,8 +55,8 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
 
         fun columnsBefore(index: Int) = columnsRange(0, index)
 
-        fun columnsRange(startInclusive: Int, endExclusive: Int) = apply {
-            slots = IntRange(startInclusive, endExclusive).toList().toIntArray()
+        fun columnsRange(start: Int, endExclusive: Int) = apply {
+            slots = IntRange(start, endExclusive).toList().toIntArray()
         }
 
         fun columns(vararg slots: Int) = apply { this.slots = slots }
@@ -113,15 +115,6 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
         @JvmStatic
         fun <T> byExcel(sheetIndex: Int, type: Class<T>): Excel<T> {
             return Excel(sheetIndex, ValuesConverter.Excel(TypeValues(type)))
-        }
-
-        @JvmStatic
-        fun toInputStream(file: String): InputStream? {
-            return try {
-                FileInputStream(file)
-            } catch (e: FileNotFoundException) {
-                null
-            }
         }
     }
 }

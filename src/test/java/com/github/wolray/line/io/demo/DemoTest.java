@@ -19,10 +19,9 @@ public class DemoTest {
     @Test
     public void demo() {
         // a quick util to get inputStream from a local file (null if the file doesn't exists
-        InputStream inputStream = LineReader.toInputStream("some-path/person.csv");
         // set csv separator and target object class
         List<Person> persons = LineReader.byCsv(",", Person.class)
-            .read(inputStream)
+            .read("some-path/person.csv")
             // skip 1 line if you don't need the header
             .skipLines(1)
             // if you need specify the header (file columns doesn't align with the class fields)

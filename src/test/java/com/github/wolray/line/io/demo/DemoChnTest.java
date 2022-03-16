@@ -6,7 +6,6 @@ import com.github.wolray.line.io.LineReader;
 import com.github.wolray.line.io.LineWriter;
 import org.junit.Test;
 
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -19,10 +18,9 @@ public class DemoChnTest {
     @Test
     public void demo() {
         // 从本地文件快速获取inputStream（如果文件不存在在返回null
-        InputStream inputStream = LineReader.toInputStream("some-path/person.csv");
         // 设置CSV的分隔符，以及目标class
         List<Person> persons = LineReader.byCsv(",", Person.class)
-            .read(inputStream)
+            .read("some-path/person.csv")
             // 如果不需要第一行的列名信息，可以直接跳过
             .skipLines(1)
             // 如果文件的列名和class的属性顺序不一致，可以手动设置列名，读取时会自动匹配

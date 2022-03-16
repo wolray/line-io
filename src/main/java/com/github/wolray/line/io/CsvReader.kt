@@ -1,6 +1,9 @@
 package com.github.wolray.line.io
 
+import java.io.File
+import java.io.FileInputStream
 import java.io.InputStream
+import java.util.function.Supplier
 
 /**
  * @author wolray
@@ -10,9 +13,11 @@ class CsvReader<T> internal constructor(
     private val sep: String
 ) : LineReader.Text<T>(converter.toParser(sep)) {
 
-    fun read(file: String) = Session(toInputStream(file)!!)
+    fun read(file: String) = Session { FileInputStream(file) }
 
-    override fun read(source: InputStream) = Session(source)
+    fun read(file: File) = Session { FileInputStream(file) }
+
+    override fun read(source: Supplier<InputStream>) = Session(source)
 
     override fun reorder(slots: IntArray) = converter.resetOrder(slots)
 
@@ -28,8 +33,8 @@ class CsvReader<T> internal constructor(
             .also { reorder(it) }
     }
 
-    inner class Session internal constructor(input: InputStream) :
-        LineReader<InputStream, String, T>.Session(input) {
+    inner class Session internal constructor(input: Supplier<InputStream>) :
+        LineReader<Supplier<InputStream>, String, T>.Session(input) {
         private var cols: Array<String>? = null
 
         override fun skipLines(n: Int) = apply { super.skipLines(n) }
