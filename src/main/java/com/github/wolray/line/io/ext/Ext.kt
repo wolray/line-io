@@ -20,3 +20,7 @@ inline fun <T> Iterable<T>.parallelLaunch(crossinline block: (T) -> Unit) {
         }
     }
 }
+
+fun <T> List<T>.asMutable() = this as MutableList
+fun <K, V> Map<K, V>.asMutable() = this as MutableMap
+fun <T> Set<T>.asMutable() = this as MutableSet

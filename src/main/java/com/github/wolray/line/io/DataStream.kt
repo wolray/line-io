@@ -1,7 +1,9 @@
 package com.github.wolray.line.io
 
-import java.util.function.*
+import java.util.function.Consumer
 import java.util.function.Function
+import java.util.function.Predicate
+import java.util.function.Supplier
 import java.util.stream.Collector
 import java.util.stream.Collectors
 import java.util.stream.Stream
@@ -10,7 +12,8 @@ import kotlin.streams.asStream
 /**
  * @author wolray
  */
-class DataStream<T> : Cacheable<T, DataStream<T>> {
+class DataStream<T> : Cacheable<T, DataStream<T>>, Chainable<DataStream<T>> {
+    override val self = this
     private var ts: List<T>? = null
     private var supplier: (() -> Stream<T>)? = null
 
@@ -55,14 +58,6 @@ class DataStream<T> : Cacheable<T, DataStream<T>> {
     fun peek(action: Consumer<T>) = mod { it.peek(action) }
 
     fun filter(predicate: Predicate<T>) = mod { it.filter(predicate) }
-
-    fun operateIf(condition: Boolean, op: UnaryOperator<DataStream<T>>): DataStream<T> {
-        return if (condition) op.apply(this) else this
-    }
-
-    fun <E> operateWith(e: E?, op: BiFunction<DataStream<T>, E, DataStream<T>>): DataStream<T> {
-        return if (e != null) op.apply(this, e) else this
-    }
 
     fun <E> map(mapper: Function<T, E>): DataStream<E> {
         val old = supplier

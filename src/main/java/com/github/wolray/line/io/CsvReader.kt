@@ -34,7 +34,9 @@ class CsvReader<T> internal constructor(
     }
 
     inner class Session internal constructor(input: Supplier<InputStream>) :
-        LineReader<Supplier<InputStream>, String, T>.Session(input) {
+        LineReader<Supplier<InputStream>, String, T>.Session(input),
+        Chainable<Session> {
+        override val self: Session = this
         private var cols: Array<String>? = null
 
         override fun skipLines(n: Int) = apply { super.skipLines(n) }

@@ -1,6 +1,5 @@
 package com.github.wolray.line.io
 
-import com.github.wolray.line.io.ext.useWith
 import java.lang.reflect.Field
 import java.util.function.Predicate
 
@@ -36,7 +35,7 @@ internal class FieldSelector {
 
     companion object {
         @JvmStatic
-        fun of(fields: Fields?) = FieldSelector().useWith(fields) {
+        fun of(fields: Fields?) = FieldSelector().useWithKt(fields) {
             pojo = it.pojo
             use = it.use
             omit = it.omit
