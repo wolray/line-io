@@ -35,7 +35,7 @@ class CsvReader<T> internal constructor(
 
     inner class Session internal constructor(input: Supplier<InputStream>) :
         LineReader<Supplier<InputStream>, String, T>.Session(input),
-        Chainable<Session> {
+        SelfChainable<Session> {
         override val self: Session = this
         private var cols: Array<String>? = null
 

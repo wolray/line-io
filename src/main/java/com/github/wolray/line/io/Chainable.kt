@@ -3,44 +3,59 @@ package com.github.wolray.line.io;
 import java.util.function.BiConsumer
 import java.util.function.BiFunction
 import java.util.function.Consumer
-import java.util.function.UnaryOperator
+import java.util.function.Function
 
 /**
  * @author wolray
  */
-interface Chainable<T> {
+interface Chainable<T, B> {
     val self: T
+    val box: B
 
-    fun use(consumer: Consumer<T>): T {
+    fun use(consumer: Consumer<T>): B {
         consumer.accept(self)
-        return self
+        return box
     }
 
-    fun useIf(condition: Boolean, consumer: Consumer<T>): T {
+    fun useIf(condition: Boolean, consumer: Consumer<T>): B {
         if (condition) {
             consumer.accept(self)
         }
-        return self
+        return box
     }
 
-    fun <E> useWith(e: E?, consumer: BiConsumer<T, E>): T {
+    fun <E> useWith(e: E?, consumer: BiConsumer<T, E>): B {
         if (e != null) {
             consumer.accept(self, e)
         }
-        return self
+        return box
     }
 
-    fun chain(operator: UnaryOperator<T>): T {
-        return operator.apply(self)
+    fun chain(function: Function<T, B>): B {
+        return function.apply(self)
     }
 
-    fun chainIf(condition: Boolean, operator: UnaryOperator<T>): T {
-        return if (condition) operator.apply(self) else self
+    fun chainIf(condition: Boolean, function: Function<T, B>): B {
+        return if (condition) function.apply(self) else box
     }
 
-    fun <E> chainWith(e: E?, function: BiFunction<T, E, T>): T {
-        return if (e != null) function.apply(self, e) else self
+    fun <E> chainWith(e: E?, function: BiFunction<T, E, B>): B {
+        return if (e != null) function.apply(self, e) else box
     }
+
+    companion object {
+        @JvmStatic
+        fun <T> box(t: T) = ChainBox(t)
+    }
+}
+
+class ChainBox<T>(t: T) : Chainable<T, ChainBox<T>> {
+    override val self: T = t
+    override val box: ChainBox<T> = this
+}
+
+interface SelfChainable<T> : Chainable<T, T> {
+    override val box: T get() = self
 }
 
 inline fun <T, E> T.useWithKt(e: E?, block: T.(E) -> Unit) = apply {
