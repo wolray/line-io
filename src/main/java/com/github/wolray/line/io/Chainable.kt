@@ -3,59 +3,35 @@ package com.github.wolray.line.io;
 import java.util.function.BiConsumer
 import java.util.function.BiFunction
 import java.util.function.Consumer
-import java.util.function.Function
+import java.util.function.UnaryOperator
 
 /**
  * @author wolray
  */
-interface Chainable<T, B> {
+interface Chainable<T> {
     val self: T
-    val box: B
 
-    fun use(consumer: Consumer<T>): B {
-        consumer.accept(self)
-        return box
-    }
-
-    fun useIf(condition: Boolean, consumer: Consumer<T>): B {
+    fun useIf(condition: Boolean, consumer: Consumer<T>): T {
         if (condition) {
             consumer.accept(self)
         }
-        return box
+        return self
     }
 
-    fun <E> useWith(e: E?, consumer: BiConsumer<T, E>): B {
+    fun <E> useWith(e: E?, consumer: BiConsumer<T, E>): T {
         if (e != null) {
             consumer.accept(self, e)
         }
-        return box
+        return self
     }
 
-    fun chain(function: Function<T, B>): B {
-        return function.apply(self)
+    fun chainIf(condition: Boolean, function: UnaryOperator<T>): T {
+        return if (condition) function.apply(self) else self
     }
 
-    fun chainIf(condition: Boolean, function: Function<T, B>): B {
-        return if (condition) function.apply(self) else box
+    fun <E> chainWith(e: E?, function: BiFunction<T, E, T>): T {
+        return if (e != null) function.apply(self, e) else self
     }
-
-    fun <E> chainWith(e: E?, function: BiFunction<T, E, B>): B {
-        return if (e != null) function.apply(self, e) else box
-    }
-
-    companion object {
-        @JvmStatic
-        fun <T> box(t: T) = ChainBox(t)
-    }
-}
-
-class ChainBox<T>(t: T) : Chainable<T, ChainBox<T>> {
-    override val self: T = t
-    override val box: ChainBox<T> = this
-}
-
-interface SelfChainable<T> : Chainable<T, T> {
-    override val box: T get() = self
 }
 
 inline fun <T, E> T.useWithKt(e: E?, block: T.(E) -> Unit) = apply {
@@ -69,4 +45,3 @@ inline fun <T> T.chainIfKt(condition: Boolean, block: T.() -> T): T {
 inline fun <T, E> T.chainWithKt(e: E?, block: T.(E) -> T): T {
     return if (e != null) block(e) else this
 }
-

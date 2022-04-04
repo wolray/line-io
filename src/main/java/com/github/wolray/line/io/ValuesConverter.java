@@ -116,6 +116,7 @@ public class ValuesConverter<V, T> implements Function<V, T> {
     private BiConsumer<T, V> fillAll() {
         TypeValues.Attr[] attrs = this.attrs;
         int len = attrs.length;
+        ToIntFunction<V> sizeGetter = this.sizeGetter;
         return (t, v) -> {
             int max = Math.min(len, sizeGetter.applyAsInt(v));
             for (int i = 0; i < max; i++) {
@@ -127,6 +128,7 @@ public class ValuesConverter<V, T> implements Function<V, T> {
     private BiConsumer<T, V> fillBySlots(int[] slots) {
         TypeValues.Attr[] attrs = this.attrs;
         int len = Math.min(attrs.length, slots.length);
+        ToIntFunction<V> sizeGetter = this.sizeGetter;
         return (t, v) -> {
             int max = Math.min(len, sizeGetter.applyAsInt(v));
             for (int i = 0; i < max; i++) {

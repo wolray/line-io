@@ -13,7 +13,7 @@ import kotlin.streams.asStream
  * @author wolray
  */
 class DataStream<T>(private var supplier: Supplier<Stream<T>>) :
-    SelfChainable<DataStream<T>>,
+    Chainable<DataStream<T>>,
     Cacheable<T, DataStream<T>>() {
     override val self: DataStream<T> = this
     private var ts: List<T>? = null
