@@ -107,7 +107,8 @@ public class ValuesConverter<V, T> implements Function<V, T> {
             if (attr.parser == null) {
                 String fmt = "cannot parse %s, please add a static method (String -> %s) inside %s";
                 String name = attr.field.getType().getSimpleName();
-                throw new IllegalStateException(String.format(fmt, name, name, typeValues.type.getSimpleName()));
+                throw new IllegalStateException(String.format(fmt,
+                    name, name, typeValues.type.getSimpleName()));
             }
             attr.composeMapper();
         }
@@ -138,7 +139,19 @@ public class ValuesConverter<V, T> implements Function<V, T> {
     }
 
     private void fillAt(T t, V values, int index, TypeValues.Attr attr) {
-        attr.set(t, convertAt(values, index, attr));
+        try {
+            attr.set(t, convertAt(values, index, attr));
+        } catch (Throwable e) {
+            String str;
+            if (values instanceof String[]) {
+                str = String.join(DataMapper.defaultSep, (String[])values);
+            } else {
+                str = values.toString();
+            }
+            String message = String.format("%s at %d for %s",
+                str, index, attr.field);
+            throw new IllegalArgumentException(message, e);
+        }
     }
 
     protected Object convertAt(V values, int index, TypeValues.Attr attr) {

@@ -7,7 +7,7 @@ import java.util.function.Function
  */
 class DataMapper<T> @JvmOverloads constructor(
     val typeValues: TypeValues<T>,
-    val sep: String = "\u02cc"
+    val sep: String = defaultSep
 ) {
     private val converter by lazy { ValuesConverter.Text(typeValues) }
     private val joiner by lazy { ValuesJoiner(typeValues) }
@@ -55,6 +55,8 @@ class DataMapper<T> @JvmOverloads constructor(
     }
 
     companion object {
+        const val defaultSep = "\u02cc"
+
         @JvmStatic
         fun <T> simple(type: Class<T>) = DataMapper(TypeValues(type))
 
