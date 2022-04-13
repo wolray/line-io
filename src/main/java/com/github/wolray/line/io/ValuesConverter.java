@@ -148,8 +148,8 @@ public class ValuesConverter<V, T> implements Function<V, T> {
             } else {
                 str = values.toString();
             }
-            String message = String.format("%s at %d for %s",
-                str, index, attr.field);
+            String message = String.format("[%s] at %d for field: %s",
+                str, index, attr.field.getName());
             throw new IllegalArgumentException(message, e);
         }
     }
