@@ -20,7 +20,7 @@ class CsvWriter<T> internal constructor(
 
         fun markUtf8() = apply { utf8 = true }
 
-        fun autoHeader() = apply { addHeader(joiner.join(sep) { it.field.name }) }
+        fun autoHeader() = apply { addHeader(joiner.join(sep)) }
 
         fun columnNames(vararg names: String) = apply {
             if (names.isNotEmpty()) {

@@ -29,8 +29,18 @@ abstract class Cacheable<T, S> {
         val f = File(path)
         return cacheBy(object : Cache<T> {
             override fun exists() = f.exists()
-            override fun read() = reader.invoke().read { FileInputStream(f) }
-            override fun write(ts: List<T>) = writer.invoke().write(path).with(ts)
+
+            override fun read() = reader.invoke().read { FileInputStream(f) }.also {
+                if (it is CsvReader<T>.Session) {
+                    it.skipLines(1)
+                }
+            }
+
+            override fun write(ts: List<T>) = writer.invoke().write(path).also {
+                if (it is CsvWriter.Session) {
+                    it.autoHeader()
+                }
+            }.with(ts)
         })
     }
 

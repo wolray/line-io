@@ -23,6 +23,9 @@ class DataMapper<T> @JvmOverloads constructor(
     fun toFormatter(sep: String): Function<T, String> = joiner.toFormatter(sep)
 
     @JvmOverloads
+    fun joinFields(sep: String = this.sep): String = joiner.join(sep)
+
+    @JvmOverloads
     fun toReader(sep: String = this.sep) = CsvReader(converter, sep)
 
     @JvmOverloads

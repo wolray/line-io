@@ -45,6 +45,10 @@ public class ValuesJoiner<T> {
         }
     }
 
+    String join(String sep) {
+        return join(sep, a -> a.field.getName());
+    }
+
     String join(String sep, Function<TypeValues.Attr, String> function) {
         StringJoiner joiner = new StringJoiner(sep);
         for (TypeValues.Attr attr : attrs) {

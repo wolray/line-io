@@ -4,6 +4,7 @@ import com.alibaba.fastjson.JSON
 import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.*
+import java.util.*
 import java.util.function.Function
 import java.util.function.Supplier
 import kotlin.streams.asStream
@@ -83,9 +84,17 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
             slots?.also { if (it.isNotEmpty()) reorder(it) }
         }
 
-        private fun getIterator() = toIterator(source).apply {
-            repeat(skip) { next() }
-            preprocess(this)
+        private fun getIterator(): Iterator<V> {
+            return try {
+                toIterator(source).apply {
+                    if (skip > 0) {
+                        repeat(skip) { next() }
+                    }
+                    preprocess(this)
+                }
+            } catch (e: Throwable) {
+                Collections.emptyIterator()
+            }
         }
 
         fun sequence(): Sequence<T> {
