@@ -25,7 +25,7 @@ abstract class Cacheable<T, S> {
         reader: () -> LineReader.Text<T>,
         writer: () -> LineWriter<T>
     ): S {
-        val path = if (file.endsWith(suffix)) file else file + suffix
+        val path = file + suffix
         val f = File(path)
         return cacheBy(object : Cache<T> {
             override fun exists() = f.exists()
