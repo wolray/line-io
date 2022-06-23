@@ -11,6 +11,11 @@ import java.util.function.UnaryOperator
 interface Chainable<T> {
     val self: T
 
+    fun use(consumer: Consumer<T>): T {
+        consumer.accept(self)
+        return self
+    }
+
     fun useIf(condition: Boolean, consumer: Consumer<T>): T {
         if (condition) {
             consumer.accept(self)

@@ -26,7 +26,7 @@ class CsvReader<T> internal constructor(
         header
             .map {
                 list.indexOf(it).apply {
-                    if (this < 0) throw NoSuchElementException(it)
+                    if (this < 0) throw NoSuchElementException("$it in ($sep splitting $s)")
                 }
             }
             .toIntArray()
@@ -34,14 +34,7 @@ class CsvReader<T> internal constructor(
     }
 
     inner class Session internal constructor(input: Supplier<InputStream>) :
-        LineReader<Supplier<InputStream>, String, T>.Session(input),
-        Chainable<Session> {
-        override val self: Session = this
-        private var cols: Array<String>? = null
-
-        override fun skipLines(n: Int) = apply { super.skipLines(n) }
-
-        fun csvHeader(vararg useCols: String) = apply { cols = arrayOf(*useCols) }
+        LineReader<Supplier<InputStream>, String, T>.Session(input) {
 
         override fun preprocess(iterator: Iterator<String>) {
             cols?.also { if (it.isNotEmpty()) setHeader(iterator.next(), it) }

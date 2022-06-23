@@ -50,9 +50,13 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
 
     open inner class Session(private val source: S) {
         private var skip: Int = 0
+        private var errorType: Array<Class<out Throwable>>? = null
         private var slots: IntArray? = null
+        protected var cols: Array<String>? = null
 
-        open fun skipLines(n: Int) = apply { skip = n }
+        fun skipLines(n: Int) = apply { skip = n }
+
+        fun ignoreError(vararg type: Class<out Throwable>) = apply { errorType = arrayOf(*type) }
 
         fun columnsBefore(index: Int) = columnsRange(0, index)
 
@@ -80,6 +84,8 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
             }
         }
 
+        fun csvHeader(vararg useCols: String) = apply { cols = arrayOf(*useCols) }
+
         protected open fun preprocess(iterator: Iterator<V>) {
             slots?.also { if (it.isNotEmpty()) reorder(it) }
         }
@@ -93,12 +99,17 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
                     preprocess(this)
                 }
             } catch (e: Throwable) {
-                Collections.emptyIterator()
+                if (errorType?.let { e.javaClass in it } != true) throw e
+                else Collections.emptyIterator()
             }
         }
 
         fun sequence(): Sequence<T> {
             return Sequence(::getIterator).map(function::apply)
+        }
+
+        fun <R> seqTo(function: Function<Sequence<T>, R>): R {
+            return function.apply(sequence())
         }
 
         fun stream(): DataStream<T> = DataStream.of {
