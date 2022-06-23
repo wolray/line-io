@@ -48,11 +48,13 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
         }
     }
 
-    open inner class Session(private val source: S) {
+    open inner class Session(private val source: S) : Chainable<Session> {
         private var skip: Int = 0
         private var errorType: Array<Class<out Throwable>>? = null
         private var slots: IntArray? = null
         protected var cols: Array<String>? = null
+
+        override val self get() = this
 
         fun skipLines(n: Int) = apply { skip = n }
 
@@ -99,8 +101,8 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
                     preprocess(this)
                 }
             } catch (e: Throwable) {
-                if (errorType?.let { e.javaClass in it } != true) throw e
-                else Collections.emptyIterator()
+                if (e.javaClass == errorType) Collections.emptyIterator()
+                else throw e
             }
         }
 
