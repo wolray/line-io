@@ -26,7 +26,7 @@ class CsvReader<T> internal constructor(
         header
             .map {
                 list.indexOf(it).apply {
-                    if (this < 0) throw NoSuchElementException("$it in ($sep splitting $s)")
+                    if (this < 0) throw NoSuchElementException("$it in '$sep' splitting [$s]")
                 }
             }
             .toIntArray()

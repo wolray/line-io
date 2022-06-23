@@ -110,7 +110,7 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
             return Sequence(::getIterator).map(function::apply)
         }
 
-        fun <R> seqTo(function: Function<Sequence<T>, R>): R {
+        fun <R> sequence(function: Function<Sequence<T>, R>): R {
             return function.apply(sequence())
         }
 
