@@ -50,7 +50,7 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
 
     open inner class Session(private val source: S) : Chainable<Session> {
         private var skip: Int = 0
-        private var errorType: Array<Class<out Throwable>>? = null
+        private var errorType: Class<out Throwable>? = null
         private var slots: IntArray? = null
         protected var cols: Array<String>? = null
 
@@ -58,7 +58,7 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
 
         fun skipLines(n: Int) = apply { skip = n }
 
-        fun ignoreError(vararg type: Class<out Throwable>) = apply { errorType = arrayOf(*type) }
+        fun ignoreError(type: Class<out Throwable>) = apply { errorType = type }
 
         fun columnsBefore(index: Int) = columnsRange(0, index)
 
@@ -101,8 +101,8 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
                     preprocess(this)
                 }
             } catch (e: Throwable) {
-                if (e.javaClass == errorType) Collections.emptyIterator()
-                else throw e
+                if (errorType?.isAssignableFrom(e.javaClass) != true) throw e
+                else Collections.emptyIterator()
             }
         }
 
