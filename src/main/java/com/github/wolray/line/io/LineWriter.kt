@@ -16,13 +16,17 @@ open class LineWriter<T>(private val formatter: Function<T, String>) {
 
     open fun write(file: String) = Session(file)
 
-    open inner class Session(protected val file: String) {
+    open inner class Session(protected val file: String) : Chainable<Session> {
         private val headers: MutableList<String> = LinkedList()
         private var append = false
+        override val self get() = this
 
         fun addHeader(header: String) = apply { headers.add(header) }
-
         fun appendToFile() = apply { append = true }
+
+        open fun markUtf8() = this
+        open fun autoHeader() = this
+        open fun columnNames(vararg names: String) = this
 
         protected open fun preprocess(bw: BufferedWriter) {}
 

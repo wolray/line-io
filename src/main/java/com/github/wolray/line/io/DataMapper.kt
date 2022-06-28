@@ -19,7 +19,6 @@ class DataMapper<T> @JvmOverloads constructor(
     }
 
     fun toParser(sep: String): Function<String, T> = converter.toParser(sep)
-
     fun toFormatter(sep: String): Function<T, String> = joiner.toFormatter(sep)
 
     @JvmOverloads
@@ -32,7 +31,6 @@ class DataMapper<T> @JvmOverloads constructor(
     fun toWriter(sep: String = this.sep) = CsvWriter(joiner, sep)
 
     fun parse(s: String) = parser.apply(s)
-
     fun format(t: T) = formatter.apply(t)
 
     class Builder<T> internal constructor(private val type: Class<T>) {

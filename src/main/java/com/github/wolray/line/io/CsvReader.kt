@@ -14,11 +14,9 @@ class CsvReader<T> internal constructor(
 ) : LineReader.Text<T>(converter.toParser(sep)) {
 
     fun read(file: String) = Session { FileInputStream(file) }
-
     fun read(file: File) = Session { FileInputStream(file) }
 
     override fun read(source: Supplier<InputStream>) = Session(source)
-
     override fun reorder(slots: IntArray) = converter.resetOrder(slots)
 
     private fun setHeader(s: String, header: Array<String>) {
@@ -35,6 +33,11 @@ class CsvReader<T> internal constructor(
 
     inner class Session internal constructor(input: Supplier<InputStream>) :
         LineReader<Supplier<InputStream>, String, T>.Session(input) {
+        private var cols: Array<String>? = null
+
+        override fun csvHeader(vararg useCols: String) = apply {
+            cols = arrayOf(*useCols)
+        }
 
         override fun preprocess(iterator: Iterator<String>) {
             cols?.also { if (it.isNotEmpty()) setHeader(iterator.next(), it) }

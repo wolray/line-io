@@ -6,6 +6,7 @@ import com.github.wolray.line.io.enableCache
 import com.github.wolray.line.io.ext.asMutable
 import com.github.wolray.line.io.toDataList
 import org.junit.Test
+import java.io.FileNotFoundException
 
 /**
  * @author wolray
@@ -25,6 +26,7 @@ class KotlinTest {
 
         val persons = CsvReader.of(",", DemoTest.Person::class.java)
             .read("some-path/person.csv")
+            .ignoreError(FileNotFoundException::class.java)
             .skipLines(1)
             .csvHeader("name", "gender", "age", "weight", "height", "phone")
             .columns(0, 1, 2, 4, 6, 8)
@@ -35,5 +37,14 @@ class KotlinTest {
             .enableCache()
             .cacheCsv("some-path/person_18.csv", DemoTest.Person::class.java, ",")
             .toDataList()
+    }
+
+    @Test
+    fun excel() {
+        val a = 'A'
+        val cols = listOf("A", "B", "Z", "AA", "AB", "AZ", "BA", "AAA")
+        cols.forEach {
+            println(it.fold(0) { acc, c -> acc * 26 + (c - a + 1) } - 1)
+        }
     }
 }

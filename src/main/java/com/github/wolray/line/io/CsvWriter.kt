@@ -12,17 +12,13 @@ class CsvWriter<T> internal constructor(
 
     override fun write(file: String) = Session(file)
 
-    inner class Session internal constructor(file: String) :
-        LineWriter<T>.Session(file),
-        Chainable<Session> {
-        override val self = this
+    inner class Session internal constructor(file: String) : LineWriter<T>.Session(file) {
         private var utf8 = false
 
-        fun markUtf8() = apply { utf8 = true }
+        override fun markUtf8() = apply { utf8 = true }
+        override fun autoHeader() = apply { addHeader(joiner.join(sep)) }
 
-        fun autoHeader() = apply { addHeader(joiner.join(sep)) }
-
-        fun columnNames(vararg names: String) = apply {
+        override fun columnNames(vararg names: String) = apply {
             if (names.isNotEmpty()) {
                 addHeader(names.joinToString(sep))
             }

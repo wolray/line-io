@@ -32,15 +32,11 @@ class DataStream<T>(private var supplier: Supplier<Stream<T>>) :
     }
 
     override fun from(session: LineReader<*, *, T>.Session) = session.stream()
-
     override fun after() = this
 
     fun limit(maxSize: Int): DataStream<T> = mapKt { limit(maxSize.toLong()) }
-
     fun peek(action: Consumer<T>): DataStream<T> = mapKt { peek(action) }
-
     fun filter(predicate: Predicate<T>): DataStream<T> = mapKt { filter(predicate) }
-
     fun <E> map(mapper: Function<T, E>): DataStream<E> = mapKt { map(mapper) }
 
     fun <E> mapBy(function: Function<Stream<T>, Stream<E>>): DataStream<E> {
