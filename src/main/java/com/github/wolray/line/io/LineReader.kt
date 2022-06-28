@@ -12,58 +12,28 @@ import kotlin.streams.asStream
 /**
  * @author wolray
  */
-abstract class LineReader<S, V, T> protected constructor(protected val function: Function<V, T>) {
-
-    open fun read(source: S) = Session(source)
-
+abstract class LineReader<S, V, T>(
+    private val isByValues: Boolean,
+    private val function: Function<V, T>
+) {
     abstract fun toIterator(source: S): Iterator<V>
 
-    protected open fun reorder(slots: IntArray) {
-        throw NotImplementedError()
-    }
+    fun read(source: S) = if (isByValues) ValuesSession(source) else Session(source)
 
-    open class Text<T> internal constructor(parser: Function<String, T>) :
-        LineReader<Supplier<InputStream>, String, T>(parser) {
+    protected open fun splitHeader(v: V): List<String> = notImplError()
+    protected open fun errorColMsg(col: String, v: V): String = notImplError()
+    protected open fun reorder(slots: IntArray): Unit = notImplError()
 
-        override fun toIterator(source: Supplier<InputStream>): Iterator<String> {
-            return BufferedReader(InputStreamReader(source.get())).lineSequence().iterator()
-        }
-    }
-
-    class Excel<T> internal constructor(
-        private val sheetIndex: Int,
-        converter: ValuesConverter.Excel<T>
-    ) : LineReader<Supplier<InputStream>, Row, T>(converter) {
-
-        override fun toIterator(source: Supplier<InputStream>): Iterator<Row> {
-            return try {
-                XSSFWorkbook(source.get()).getSheetAt(sheetIndex).iterator()
-            } catch (e: IOException) {
-                throw UncheckedIOException(e)
-            }
-        }
-
-        override fun reorder(slots: IntArray) {
-            (function as ValuesConverter.Excel<T>).resetOrder(slots)
-        }
-    }
-
-    open inner class Session(private val source: S) : Chainable<Session> {
-        private var errorType: Class<out Throwable>? = null
-        private var skip: Int = 0
+    inner class ValuesSession(source: S) : Session(source) {
         private var slots: IntArray? = null
-        override val self get() = this
+        private var cols: Array<String>? = null
 
-        fun ignoreError(type: Class<out Throwable>) = apply { errorType = type }
-        fun skipLines(n: Int) = apply { skip = n }
-        fun columns(vararg index: Int) = apply { slots = index }
-        fun columnsBefore(index: Int) = columnsRange(0, index)
-        fun columnsRange(start: Int, before: Int) = apply { slots = rangeOf(start, before) }
+        override fun columns(vararg index: Int) = apply { slots = index }
+        override fun columnsBefore(index: Int) = columnsRange(0, index)
+        override fun columnsRange(start: Int, before: Int) = apply { slots = rangeOf(start, before) }
 
-        fun columns(excelCols: String?) = apply {
-            slots = if (excelCols.isNullOrEmpty()) {
-                IntArray(0)
-            } else {
+        override fun columns(excelCols: String) = apply {
+            slots = if (excelCols.isEmpty()) IntArray(0) else {
                 val a = 'A'
                 excelCols.split(",".toRegex())
                     .map {
@@ -73,11 +43,39 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
             }
         }
 
-        open fun csvHeader(vararg useCols: String) = this
+        override fun csvHeader(vararg useCols: String) = apply { cols = arrayOf(*useCols) }
 
-        protected open fun preprocess(iterator: Iterator<V>) {
-            slots?.also { if (it.isNotEmpty()) reorder(it) }
+        override fun preprocess(iterator: Iterator<V>) {
+            slots = cols?.takeIf { it.isNotEmpty() }?.let {
+                matchHeader(iterator.next(), it)
+            } ?: slots
+            slots?.takeIf { it.isNotEmpty() }?.also { reorder(it) }
         }
+
+        private fun matchHeader(v: V, header: Array<String>): IntArray {
+            val split = splitHeader(v)
+            return header.map {
+                split.indexOf(it).apply {
+                    if (this < 0) throw NoSuchElementException(errorColMsg(it, v))
+                }
+            }.toIntArray()
+        }
+    }
+
+    open inner class Session(private val source: S) : Chainable<Session> {
+        private var errorType: Class<out Throwable>? = null
+        private var skip: Int = 0
+        override val self get() = this
+
+        fun ignoreError(type: Class<out Throwable>) = apply { errorType = type }
+        fun skipLines(n: Int) = apply { skip = n }
+
+        open fun columns(vararg index: Int): Session = notImplError()
+        open fun columnsBefore(index: Int): Session = notImplError()
+        open fun columnsRange(start: Int, before: Int): Session = notImplError()
+        open fun columns(excelCols: String): Session = notImplError()
+        open fun csvHeader(vararg useCols: String): Session = notImplError()
+        open fun preprocess(iterator: Iterator<V>) {}
 
         private fun getIterator(): Iterator<V> {
             return try {
@@ -106,12 +104,46 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
         }
     }
 
+    abstract class Is<V, T>(isByValues: Boolean, function: Function<V, T>) :
+        LineReader<Supplier<InputStream>, V, T>(isByValues, function) {
+
+        fun read(file: String) = read { FileInputStream(file) }
+        fun read(file: File) = read { FileInputStream(file) }
+        fun read(cls: Class<*>, resource: String) = read { cls.getResourceAsStream(resource)!! }
+    }
+
+    open class Text<T>(isByValues: Boolean, function: Function<String, T>) :
+        Is<String, T>(isByValues, function) {
+
+        override fun toIterator(source: Supplier<InputStream>): Iterator<String> {
+            return BufferedReader(InputStreamReader(source.get())).lineSequence().iterator()
+        }
+    }
+
+    class Excel<T> internal constructor(
+        private val sheetIndex: Int,
+        private val converter: ValuesConverter.Excel<T>
+    ) : Is<Row, T>(true, converter) {
+
+        override fun toIterator(source: Supplier<InputStream>): Iterator<Row> {
+            return try {
+                XSSFWorkbook(source.get()).getSheetAt(sheetIndex).iterator()
+            } catch (e: IOException) {
+                throw UncheckedIOException(e)
+            }
+        }
+
+        override fun splitHeader(v: Row): List<String> = v.map { it.stringCellValue }
+        override fun errorColMsg(col: String, v: Row): String = col
+        override fun reorder(slots: IntArray) = converter.resetOrder(slots)
+    }
+
     companion object {
         @JvmStatic
-        fun <T> simple(parser: Function<String, T>) = Text(parser)
+        fun <T> simple(parser: Function<String, T>) = Text(false, parser)
 
         @JvmStatic
-        fun <T> byJson(type: Class<T>) = Text { JSON.parseObject(it, type) }
+        fun <T> byJson(type: Class<T>) = Text(false) { JSON.parseObject(it, type) }
 
         @JvmStatic
         fun <T> byCsv(sep: String, type: Class<T>): CsvReader<T> {
@@ -125,6 +157,8 @@ abstract class LineReader<S, V, T> protected constructor(protected val function:
         fun <T> byExcel(sheetIndex: Int, type: Class<T>): Excel<T> {
             return Excel(sheetIndex, ValuesConverter.Excel(TypeValues(type)))
         }
+
+        private fun <T> notImplError(): T = throw NotImplementedError()
 
         private fun rangeOf(start: Int, before: Int): IntArray {
             return (start until before).toList().toIntArray()

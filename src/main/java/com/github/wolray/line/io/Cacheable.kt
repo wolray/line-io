@@ -1,7 +1,6 @@
 package com.github.wolray.line.io
 
 import java.io.File
-import java.io.FileInputStream
 
 /**
  * @author wolray
@@ -22,24 +21,21 @@ abstract class Cacheable<T, S> {
 
     private fun cacheFile(
         file: String, suffix: String,
-        reader: () -> LineReader.Text<T>,
+        reader: () -> LineReader.Is<*, T>,
         writer: () -> LineWriter<T>
     ): S {
         val path = file + suffix
         val f = File(path)
         return cacheBy(object : Cache<T> {
+
             override fun exists() = f.exists()
 
-            override fun read() = reader.invoke().read { FileInputStream(f) }.also {
-                if (it is CsvReader<T>.Session) {
-                    it.skipLines(1)
-                }
+            override fun read() = reader().let {
+                it.read(f).apply { if (it is CsvReader<T>) skipLines(1) }
             }
 
-            override fun write(ts: List<T>) = writer.invoke().write(path).also {
-                if (it is CsvWriter.Session) {
-                    it.autoHeader()
-                }
+            override fun write(ts: List<T>) = writer().let {
+                it.write(path).apply { if (it is CsvWriter<T>) autoHeader() }
             }.with(ts)
         })
     }

@@ -1,8 +1,8 @@
 package com.github.wolray.line.io
 
-import java.io.File
-import java.io.FileInputStream
+import java.io.BufferedReader
 import java.io.InputStream
+import java.io.InputStreamReader
 import java.util.function.Supplier
 
 /**
@@ -11,39 +11,17 @@ import java.util.function.Supplier
 class CsvReader<T> internal constructor(
     private val converter: ValuesConverter.Text<T>,
     private val sep: String
-) : LineReader.Text<T>(converter.toParser(sep)) {
+) : LineReader.Is<Array<String>, T>(true, converter) {
 
-    fun read(file: String) = Session { FileInputStream(file) }
-    fun read(file: File) = Session { FileInputStream(file) }
+    override fun toIterator(source: Supplier<InputStream>): Iterator<Array<String>> {
+        return BufferedReader(InputStreamReader(source.get())).lineSequence()
+            .map { (it as java.lang.String).split(sep) }
+            .iterator()
+    }
 
-    override fun read(source: Supplier<InputStream>) = Session(source)
+    override fun splitHeader(v: Array<String>): List<String> = v.toList()
+    override fun errorColMsg(col: String, v: Array<String>): String = "$col not in ${v.contentToString()}"
     override fun reorder(slots: IntArray) = converter.resetOrder(slots)
-
-    private fun setHeader(s: String, header: Array<String>) {
-        val list = s.split(sep.toRegex())
-        header
-            .map {
-                list.indexOf(it).apply {
-                    if (this < 0) throw NoSuchElementException("$it in '$sep' splitting [$s]")
-                }
-            }
-            .toIntArray()
-            .also { reorder(it) }
-    }
-
-    inner class Session internal constructor(input: Supplier<InputStream>) :
-        LineReader<Supplier<InputStream>, String, T>.Session(input) {
-        private var cols: Array<String>? = null
-
-        override fun csvHeader(vararg useCols: String) = apply {
-            cols = arrayOf(*useCols)
-        }
-
-        override fun preprocess(iterator: Iterator<String>) {
-            cols?.also { if (it.isNotEmpty()) setHeader(iterator.next(), it) }
-                ?: super.preprocess(iterator)
-        }
-    }
 
     companion object {
         @JvmStatic
