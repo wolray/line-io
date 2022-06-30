@@ -3,7 +3,6 @@ package com.github.wolray.line.io.demo
 import com.github.wolray.line.io.CachedSequence
 import com.github.wolray.line.io.CsvReader
 import com.github.wolray.line.io.enableCache
-import com.github.wolray.line.io.ext.asMutable
 import com.github.wolray.line.io.toDataList
 import org.junit.Test
 import java.io.FileNotFoundException
@@ -21,7 +20,6 @@ class KotlinTest {
 
         val map = (0..9).associate { it + 10 to it + 100 }
         println(map)
-        map.asMutable()[233] = 233
         println(map)
 
         val persons = CsvReader.of(",", DemoTest.Person::class.java)

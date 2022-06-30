@@ -9,6 +9,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.function.*;
 import java.util.stream.Stream;
@@ -144,7 +145,7 @@ public class ValuesConverter<V, T> implements Function<V, T> {
         } catch (Throwable e) {
             String str;
             if (values instanceof String[]) {
-                str = String.join(DataMapper.defaultSep, (String[])values);
+                str = String.join(DataMapper.DEFAULT_SEP, (String[])values);
             } else {
                 str = values.toString();
             }
@@ -169,18 +170,18 @@ public class ValuesConverter<V, T> implements Function<V, T> {
         }
     }
 
-    public static class Text<T> extends ValuesConverter<String[], T> {
-        public Text(TypeValues<T> typeValues) {
-            super(typeValues, a -> a.length);
+    public static class Csv<T> extends ValuesConverter<List<String>, T> {
+        public Csv(TypeValues<T> typeValues) {
+            super(typeValues, List::size);
         }
 
         @Override
-        protected Object convertAt(String[] values, int index, TypeValues.Attr attr) {
-            return attr.parse(values[index]);
+        protected Object convertAt(List<String> values, int index, TypeValues.Attr attr) {
+            return attr.parse(values.get(index));
         }
 
         public Function<String, T> toParser(String sep) {
-            return compose(s -> s.split(sep));
+            return compose(s -> IReaderKt.splitToList(s, sep));
         }
     }
 

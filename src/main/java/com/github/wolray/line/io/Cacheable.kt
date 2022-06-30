@@ -21,7 +21,7 @@ abstract class Cacheable<T, S> {
 
     private fun cacheFile(
         file: String, suffix: String,
-        reader: () -> LineReader.Is<*, T>,
+        reader: () -> IReader.Is<*, T>,
         writer: () -> LineWriter<T>
     ): S {
         val path = file + suffix
@@ -42,7 +42,7 @@ abstract class Cacheable<T, S> {
 
     @JvmOverloads
     fun cacheCsv(file: String, type: Class<T>, sep: String = ","): S {
-        return cacheCsv(file, DataMapper.simple(type, sep))
+        return cacheCsv(file, DataMapper.of(type, sep))
     }
 
     fun cacheCsv(file: String, mapper: DataMapper<T>): S {

@@ -3,7 +3,9 @@ package com.github.wolray.line.io
 import com.alibaba.fastjson.JSON
 import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
-import java.io.*
+import java.io.IOException
+import java.io.InputStream
+import java.io.UncheckedIOException
 import java.util.*
 import java.util.function.Function
 import java.util.function.Supplier
@@ -12,27 +14,26 @@ import kotlin.streams.asStream
 /**
  * @author wolray
  */
-abstract class LineReader<S, V, T>(
-    private val isByValues: Boolean,
-    private val function: Function<V, T>
-) {
-    abstract fun toIterator(source: S): Iterator<V>
+abstract class LineReader<S, V, T>(val function: Function<V, T>) : IReader<S, V, T> {
 
-    fun read(source: S) = if (isByValues) ValuesSession(source) else Session(source)
+    override fun read(source: S) = Session(source)
+    override fun invoke(v: V): T = function.apply(v)
 
-    protected open fun splitHeader(v: V): List<String> = notImplError()
-    protected open fun errorColMsg(col: String, v: V): String = notImplError()
-    protected open fun reorder(slots: IntArray): Unit = notImplError()
+    open inner class Session(private val source: S) : Chainable<Session> {
+        override val self get() = this
+        private var errorType: Class<out Throwable>? = null
+        private var skip: Int = 0
+        protected var slots: IntArray? = null
+        protected var cols: Array<String>? = null
 
-    inner class ValuesSession(source: S) : Session(source) {
-        private var slots: IntArray? = null
-        private var cols: Array<String>? = null
+        fun ignoreError(type: Class<out Throwable>) = apply { errorType = type }
+        fun skipLines(n: Int) = apply { skip = n }
 
-        override fun columns(vararg index: Int) = apply { slots = index }
-        override fun columnsBefore(index: Int) = columnsRange(0, index)
-        override fun columnsRange(start: Int, before: Int) = apply { slots = rangeOf(start, before) }
+        fun columns(vararg index: Int) = apply { slots = index }
+        fun columnsBefore(index: Int) = columnsRange(0, index)
+        fun columnsRange(start: Int, before: Int) = apply { slots = start.rangeUntil(before) }
 
-        override fun columns(excelCols: String) = apply {
+        fun columns(excelCols: String) = apply {
             slots = if (excelCols.isEmpty()) IntArray(0) else {
                 val a = 'A'
                 excelCols.split(",".toRegex())
@@ -43,39 +44,9 @@ abstract class LineReader<S, V, T>(
             }
         }
 
-        override fun csvHeader(vararg useCols: String) = apply { cols = arrayOf(*useCols) }
+        fun csvHeader(vararg useCols: String) = apply { cols = arrayOf(*useCols) }
 
-        override fun preprocess(iterator: Iterator<V>) {
-            slots = cols?.takeIf { it.isNotEmpty() }?.let {
-                matchHeader(iterator.next(), it)
-            } ?: slots
-            slots?.takeIf { it.isNotEmpty() }?.also { reorder(it) }
-        }
-
-        private fun matchHeader(v: V, header: Array<String>): IntArray {
-            val split = splitHeader(v)
-            return header.map {
-                split.indexOf(it).apply {
-                    if (this < 0) throw NoSuchElementException(errorColMsg(it, v))
-                }
-            }.toIntArray()
-        }
-    }
-
-    open inner class Session(private val source: S) : Chainable<Session> {
-        private var errorType: Class<out Throwable>? = null
-        private var skip: Int = 0
-        override val self get() = this
-
-        fun ignoreError(type: Class<out Throwable>) = apply { errorType = type }
-        fun skipLines(n: Int) = apply { skip = n }
-
-        open fun columns(vararg index: Int): Session = notImplError()
-        open fun columnsBefore(index: Int): Session = notImplError()
-        open fun columnsRange(start: Int, before: Int): Session = notImplError()
-        open fun columns(excelCols: String): Session = notImplError()
-        open fun csvHeader(vararg useCols: String): Session = notImplError()
-        open fun preprocess(iterator: Iterator<V>) {}
+        protected open fun preprocess(iterator: Iterator<V>) {}
 
         private fun getIterator(): Iterator<V> {
             return try {
@@ -92,38 +63,28 @@ abstract class LineReader<S, V, T>(
         }
 
         fun sequence(): Sequence<T> {
-            return Sequence(::getIterator).map(function::apply)
+            return Sequence(::getIterator).map(this@LineReader)
         }
 
         fun <R> sequence(function: Function<Sequence<T>, R>): R {
             return function.apply(sequence())
         }
 
-        fun stream(): DataStream<T> = DataStream.of {
-            getIterator().asSequence().asStream().map(function)
-        }
+        fun stream(): DataStream<T> = DataStream.of { sequence().asStream() }
     }
 
-    abstract class Is<V, T>(isByValues: Boolean, function: Function<V, T>) :
-        LineReader<Supplier<InputStream>, V, T>(isByValues, function) {
+    open class Simple<T>(function: Function<String, T>) :
+        LineReader<Text, String, T>(function), IReader.Is<String, T> {
 
-        fun read(file: String) = read { FileInputStream(file) }
-        fun read(file: File) = read { FileInputStream(file) }
-        fun read(cls: Class<*>, resource: String) = read { cls.getResourceAsStream(resource)!! }
-    }
-
-    open class Text<T>(isByValues: Boolean, function: Function<String, T>) :
-        Is<String, T>(isByValues, function) {
-
-        override fun toIterator(source: Supplier<InputStream>): Iterator<String> {
-            return BufferedReader(InputStreamReader(source.get())).lineSequence().iterator()
+        override fun toIterator(source: Text): Iterator<String> {
+            return source.toSequence().iterator()
         }
     }
 
     class Excel<T> internal constructor(
         private val sheetIndex: Int,
-        private val converter: ValuesConverter.Excel<T>
-    ) : Is<Row, T>(true, converter) {
+        converter: ValuesConverter.Excel<T>
+    ) : ValuesReader<Text, Row, T>(converter), IReader.Is<Row, T> {
 
         override fun toIterator(source: Supplier<InputStream>): Iterator<Row> {
             return try {
@@ -133,21 +94,20 @@ abstract class LineReader<S, V, T>(
             }
         }
 
-        override fun splitHeader(v: Row): List<String> = v.map { it.stringCellValue }
-        override fun errorColMsg(col: String, v: Row): String = col
-        override fun reorder(slots: IntArray) = converter.resetOrder(slots)
+        override fun splitHeader(v: Row) = v.map { it.stringCellValue }
+        override fun errorColMsg(col: String, v: Row) = col
     }
 
     companion object {
         @JvmStatic
-        fun <T> simple(parser: Function<String, T>) = Text(false, parser)
+        fun <T> simple(parser: Function<String, T>) = Simple(parser)
 
         @JvmStatic
-        fun <T> byJson(type: Class<T>) = Text(false) { JSON.parseObject(it, type) }
+        fun <T> byJson(type: Class<T>) = Simple { JSON.parseObject(it, type) }
 
         @JvmStatic
         fun <T> byCsv(sep: String, type: Class<T>): CsvReader<T> {
-            return CsvReader(ValuesConverter.Text(TypeValues(type)), sep)
+            return CsvReader(ValuesConverter.Csv(TypeValues(type)), sep)
         }
 
         @JvmStatic
@@ -156,12 +116,6 @@ abstract class LineReader<S, V, T>(
         @JvmStatic
         fun <T> byExcel(sheetIndex: Int, type: Class<T>): Excel<T> {
             return Excel(sheetIndex, ValuesConverter.Excel(TypeValues(type)))
-        }
-
-        private fun <T> notImplError(): T = throw NotImplementedError()
-
-        private fun rangeOf(start: Int, before: Int): IntArray {
-            return (start until before).toList().toIntArray()
         }
     }
 }
