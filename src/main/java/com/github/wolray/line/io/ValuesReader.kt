@@ -12,20 +12,18 @@ abstract class ValuesReader<S, V, T>(val converter: ValuesConverter<V, T>) :
 
     inner class ValuesSession(source: S) : Session(source) {
 
-        override fun preprocess(iterator: Iterator<V>) {
-            cols.ifNotEmpty {
-                slots = headerToSlots(iterator.next(), it)
-            }
+        override fun preprocess(iterator: Iterator<V>) = with(NotEmpty) {
+            cols.ifNotEmpty { restSlots(iterator.next(), this) }
             limit = limit.coerceAtLeast(converter.attrs.size)
             slots.ifNotEmpty {
-                converter.resetOrder(it)
-                limit = limit.coerceAtLeast(it.max() + 1)
+                converter.resetOrder(this)
+                limit = limit.coerceAtLeast(max() + 1)
             }
         }
 
-        private fun headerToSlots(v: V, header: Array<String>): IntArray {
+        private fun restSlots(v: V, header: Array<String>) {
             val split = splitHeader(v)
-            return header.map {
+            slots = header.map {
                 split.indexOf(it).apply {
                     if (this < 0) throw NoSuchElementException(errorColMsg(it, v))
                 }

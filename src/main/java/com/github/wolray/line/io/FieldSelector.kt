@@ -13,24 +13,24 @@ internal class FieldSelector {
     var useRegex: String? = null
     var omitRegex: String? = null
 
-    fun toPredicate(): Predicate<Field> {
-        if (use.isNullOrEmpty().not()) {
-            val set = use!!.toSet()
+    fun toPredicate(): Predicate<Field> = with(NotEmpty) {
+        use.ifNotEmpty {
+            val set = toSet()
             return Predicate { set.contains(it.name) }
         }
-        if (omit.isNullOrEmpty().not()) {
-            val set = omit!!.toSet()
+        omit.ifNotEmpty {
+            val set = toSet()
             return Predicate { !set.contains(it.name) }
         }
-        if (useRegex.isNullOrEmpty().not()) {
-            val regex = useRegex!!.toRegex()
+        useRegex.ifNotEmpty {
+            val regex = toRegex()
             return Predicate { it.name.matches(regex) }
         }
-        if (omitRegex.isNullOrEmpty().not()) {
-            val regex = omitRegex!!.toRegex()
+        omitRegex.ifNotEmpty {
+            val regex = toRegex()
             return Predicate { !it.name.matches(regex) }
         }
-        return Predicate { true }
+        Predicate { true }
     }
 
     companion object {

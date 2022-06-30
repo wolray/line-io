@@ -34,14 +34,13 @@ abstract class LineReader<S, V, T>(val function: Function<V, T>) : IReader<S, V,
         fun columnsRange(start: Int, before: Int) = apply { slots = start.rangeUntil(before) }
 
         fun columns(excelCols: String) = apply {
-            slots = if (excelCols.isEmpty()) IntArray(0) else {
-                val a = 'A'
-                excelCols.split(",".toRegex())
-                    .map {
-                        it.trim().fold(0) { acc, c -> acc * 26 + (c - a + 1) } - 1
-                    }
-                    .toIntArray()
+            slots = if (excelCols.isEmpty()) intArrayOf() else {
+                excelCols.split(",").map(::excelIndex).toIntArray()
             }
+        }
+
+        private fun excelIndex(col: String): Int {
+            return col.trim().fold(0) { acc, c -> acc * 26 + (c - A + 1) } - 1
         }
 
         fun csvHeader(vararg useCols: String) = apply { cols = arrayOf(*useCols) }
@@ -51,9 +50,7 @@ abstract class LineReader<S, V, T>(val function: Function<V, T>) : IReader<S, V,
         private fun getIterator(): Iterator<V> {
             return try {
                 toIterator(source).apply {
-                    if (skip > 0) {
-                        repeat(skip) { next() }
-                    }
+                    if (skip > 0) repeat(skip) { next() }
                     preprocess(this)
                 }
             } catch (e: Throwable) {
@@ -99,6 +96,8 @@ abstract class LineReader<S, V, T>(val function: Function<V, T>) : IReader<S, V,
     }
 
     companion object {
+        private const val A = 'A'
+
         @JvmStatic
         fun <T> simple(parser: Function<String, T>) = Simple(parser)
 

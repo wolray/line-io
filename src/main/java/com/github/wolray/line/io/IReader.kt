@@ -23,10 +23,19 @@ fun Text.toSequence() = BufferedReader(InputStreamReader(get())).lineSequence()
 fun String.splitToList(sep: String) = split(sep)
 fun Int.rangeUntil(before: Int): IntArray = (this until before).toList().toIntArray()
 
-inline fun <T> Array<T>?.ifNotEmpty(block: (Array<T>) -> Unit) {
-    this?.takeIf { it.isNotEmpty() }?.also(block)
-}
-
-inline fun IntArray?.ifNotEmpty(block: (IntArray) -> Unit) {
-    this?.takeIf { it.isNotEmpty() }?.also(block)
+object NotEmpty {
+    inline fun <T> T?.ifNotEmpty(block: T.() -> Unit) {
+        this?.takeIf {
+            when (this) {
+                is String -> isNotEmpty()
+                is Array<*> -> isNotEmpty()
+                is IntArray -> isNotEmpty()
+                is Collection<*> -> isNotEmpty()
+                is Map<*, *> -> isNotEmpty()
+                is DoubleArray -> isNotEmpty()
+                is LongArray -> isNotEmpty()
+                else -> true
+            }
+        }?.run(block)
+    }
 }
