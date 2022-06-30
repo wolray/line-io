@@ -7,6 +7,8 @@ abstract class ValuesReader<S, V, T>(val converter: ValuesConverter<V, T>) :
     LineReader<S, V, T>(converter) {
     protected var limit = 0
 
+    override fun read(source: S): Session = ValuesSession(source)
+
     protected abstract fun splitHeader(v: V): List<String>
     protected abstract fun errorColMsg(col: String, v: V): String
 
