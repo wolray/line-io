@@ -15,7 +15,7 @@ abstract class ValuesReader<S, V, T>(val converter: ValuesConverter<V, T>) :
     open inner class ValuesSession(source: S) : Session(source) {
 
         override fun preprocess(iterator: Iterator<V>) = with(NotEmpty) {
-            cols.ifNotEmpty { restSlots(iterator.next(), this) }
+            cols.ifNotEmpty { restSlots(iterator, this) }
             limit = limit.coerceAtLeast(converter.attrs.size)
             slots.ifNotEmpty {
                 converter.resetOrder(this)
