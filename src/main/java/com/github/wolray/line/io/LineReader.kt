@@ -91,7 +91,6 @@ abstract class LineReader<S, V, T>(val function: Function<V, T>) : IReader<S, V,
         }
 
         override fun splitHeader(iterator: Iterator<Row>) = iterator.next().map { it.stringCellValue }
-        override fun errorColMsg(col: String, header: List<String>) = col
     }
 
     companion object {

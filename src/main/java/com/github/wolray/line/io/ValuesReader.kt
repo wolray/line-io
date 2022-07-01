@@ -10,7 +10,6 @@ abstract class ValuesReader<S, V, T>(val converter: ValuesConverter<V, T>) :
     override fun read(source: S): Session = ValuesSession(source)
 
     protected abstract fun splitHeader(iterator: Iterator<V>): List<String>
-    protected abstract fun errorColMsg(col: String, header: List<String>): String
 
     open inner class ValuesSession(source: S) : Session(source) {
 
@@ -27,7 +26,7 @@ abstract class ValuesReader<S, V, T>(val converter: ValuesConverter<V, T>) :
             val split = splitHeader(iterator)
             slots = cols.map {
                 split.indexOf(it).apply {
-                    if (this < 0) throw NoSuchElementException(errorColMsg(it, split))
+                    if (this < 0) throw NoSuchElementException("$it not in $split")
                 }
             }.toIntArray()
         }
