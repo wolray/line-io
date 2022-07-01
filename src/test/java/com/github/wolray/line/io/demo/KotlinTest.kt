@@ -26,9 +26,9 @@ class KotlinTest {
             .read("some-path/person.csv")
             .ignoreError(FileNotFoundException::class.java)
             .skipLines(1)
-            .csvHeader("name", "gender", "age", "weight", "height", "phone")
+            .columns("name", "gender", "age", "weight", "height", "phone")
             .columns(0, 1, 2, 4, 6, 8)
-            .columns("A,B,C,E,G,I")
+            .excelColumns("A,B,C,E,G,I")
             .sequence()
             .onEach { it.weightHeightRatio = it.weight / it.height }
             .filter { it.age >= 18 }

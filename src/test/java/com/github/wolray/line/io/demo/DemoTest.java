@@ -6,7 +6,6 @@ import com.github.wolray.line.io.LineReader;
 import com.github.wolray.line.io.LineWriter;
 import org.junit.Test;
 
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -25,11 +24,11 @@ public class DemoTest {
             // skip 1 line if you don't need the header
             .skipLines(1)
             // if you need specify the header (file columns doesn't align with the class fields)
-            .csvHeader("name", "gender", "age", "weight", "height", "phone")
+            .columns("name", "gender", "age", "weight", "height", "phone")
             // or you may like to specify the columns by indices
             .columns(0, 1, 2, 4, 6, 8)
             // or using excel-style columns
-            .columns("A,B,C,E,G,I")
+            .excelColumns("A,B,C,E,G,I")
             // generate a lazy stream that will not be evaluated until collecting.
             .stream()
             // computing properties right after converting the object

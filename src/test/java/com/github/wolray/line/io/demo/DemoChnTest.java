@@ -24,11 +24,11 @@ public class DemoChnTest {
             // 如果不需要第一行的列名信息，可以直接跳过
             .skipLines(1)
             // 如果文件的列名和class的属性顺序不一致，可以手动设置列名，读取时会自动匹配
-            .csvHeader("name", "gender", "age", "weight", "height", "phone")
+            .columns("name", "gender", "age", "weight", "height", "phone")
             // 也可以通过下标的方式设置每个属性对应哪一列
             .columns(0, 1, 2, 4, 6, 8)
             // 也可以通过excel的列名方式来声明
-            .columns("A,B,C,E,G,I")
+            .excelColumns("A,B,C,E,G,I")
             // 生成一个惰性加载的stream，只有在collect才会真正执行
             .stream()
             // 可以在初始化之后随意计算其他属性

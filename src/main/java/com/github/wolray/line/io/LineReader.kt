@@ -29,11 +29,12 @@ abstract class LineReader<S, V, T>(val function: Function<V, T>) : IReader<S, V,
         fun ignoreError(type: Class<out Throwable>) = apply { errorType = type }
         fun skipLines(n: Int) = apply { skip = n }
 
+        fun columns(vararg col: String) = apply { cols = arrayOf(*col) }
         fun columns(vararg index: Int) = apply { slots = index }
         fun columnsBefore(index: Int) = columnsRange(0, index)
         fun columnsRange(start: Int, before: Int) = apply { slots = start.rangeUntil(before) }
 
-        fun columns(excelCols: String) = apply {
+        fun excelColumns(excelCols: String) = apply {
             slots = if (excelCols.isEmpty()) intArrayOf() else {
                 excelCols.split(",").map(::excelIndex).toIntArray()
             }
@@ -42,8 +43,6 @@ abstract class LineReader<S, V, T>(val function: Function<V, T>) : IReader<S, V,
         private fun excelIndex(col: String): Int {
             return col.trim().fold(0) { acc, c -> acc * 26 + (c - A + 1) } - 1
         }
-
-        fun csvHeader(vararg useCols: String) = apply { cols = arrayOf(*useCols) }
 
         protected open fun preprocess(iterator: Iterator<V>) {}
 
@@ -91,8 +90,8 @@ abstract class LineReader<S, V, T>(val function: Function<V, T>) : IReader<S, V,
             }
         }
 
-        override fun splitHeader(v: Row) = v.map { it.stringCellValue }
-        override fun errorColMsg(col: String, v: Row) = col
+        override fun splitHeader(iterator: Iterator<Row>) = iterator.next().map { it.stringCellValue }
+        override fun errorColMsg(col: String, header: List<String>) = col
     }
 
     companion object {

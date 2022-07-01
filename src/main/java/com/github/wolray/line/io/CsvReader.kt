@@ -14,8 +14,8 @@ class CsvReader<T> internal constructor(
 
     private fun split(s: String) = s.split(sep, limit = limit)
 
-    override fun splitHeader(v: List<String>) = v
-    override fun errorColMsg(col: String, v: List<String>) = "$col not in $v"
+    override fun splitHeader(iterator: Iterator<List<String>>) = iterator.next()
+    override fun errorColMsg(col: String, header: List<String>) = "$col not in $header"
 
     companion object {
         @JvmStatic

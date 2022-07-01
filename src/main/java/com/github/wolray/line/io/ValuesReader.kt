@@ -9,10 +9,10 @@ abstract class ValuesReader<S, V, T>(val converter: ValuesConverter<V, T>) :
 
     override fun read(source: S): Session = ValuesSession(source)
 
-    protected abstract fun splitHeader(v: V): List<String>
-    protected abstract fun errorColMsg(col: String, v: V): String
+    protected abstract fun splitHeader(iterator: Iterator<V>): List<String>
+    protected abstract fun errorColMsg(col: String, header: List<String>): String
 
-    inner class ValuesSession(source: S) : Session(source) {
+    open inner class ValuesSession(source: S) : Session(source) {
 
         override fun preprocess(iterator: Iterator<V>) = with(NotEmpty) {
             cols.ifNotEmpty { restSlots(iterator.next(), this) }
@@ -23,11 +23,11 @@ abstract class ValuesReader<S, V, T>(val converter: ValuesConverter<V, T>) :
             }
         }
 
-        private fun restSlots(v: V, header: Array<String>) {
-            val split = splitHeader(v)
-            slots = header.map {
+        private fun restSlots(iterator: Iterator<V>, cols: Array<String>) {
+            val split = splitHeader(iterator)
+            slots = cols.map {
                 split.indexOf(it).apply {
-                    if (this < 0) throw NoSuchElementException(errorColMsg(it, v))
+                    if (this < 0) throw NoSuchElementException(errorColMsg(it, split))
                 }
             }.toIntArray()
         }
