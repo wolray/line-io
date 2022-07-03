@@ -1,7 +1,5 @@
 package com.github.wolray.line.io
 
-import java.util.function.Function
-
 /**
  * @author wolray
  */
@@ -10,7 +8,7 @@ class DataMapper<T> @JvmOverloads constructor(
     val sep: String = DEFAULT_SEP
 ) {
     private val converter by lazy { ValuesConverter.Csv(typeValues) }
-    private val joiner by lazy { ValuesJoiner(typeValues) }
+    private val joiner by lazy { ValuesJoiner.Csv(typeValues) }
     private val parser by lazy { toParser(sep) }
     private val formatter by lazy { toFormatter(sep) }
 
@@ -18,11 +16,11 @@ class DataMapper<T> @JvmOverloads constructor(
         return if (sep == this.sep) this else DataMapper(typeValues, sep)
     }
 
-    fun toParser(sep: String): Function<String, T> = converter.toParser(sep)
-    fun toFormatter(sep: String): Function<T, String> = joiner.toFormatter(sep)
+    fun toParser(sep: String): (String) -> T = converter.toParser(sep)
+    fun toFormatter(sep: String): (T) -> String = joiner.toFormatter(sep)
 
     @JvmOverloads
-    fun joinFields(sep: String = this.sep): String = joiner.join(sep)
+    fun joinFields(sep: String = this.sep): String = joiner.joinFields(sep)
 
     @JvmOverloads
     fun toReader(sep: String = this.sep) = CsvReader(converter, sep)
@@ -30,8 +28,8 @@ class DataMapper<T> @JvmOverloads constructor(
     @JvmOverloads
     fun toWriter(sep: String = this.sep) = CsvWriter(joiner, sep)
 
-    fun parse(s: String) = parser.apply(s)
-    fun format(t: T) = formatter.apply(t)
+    fun parse(s: String) = parser(s)
+    fun format(t: T) = formatter(t)
 
     class Builder<T> internal constructor(private val type: Class<T>) {
         private val selector = FieldSelector()

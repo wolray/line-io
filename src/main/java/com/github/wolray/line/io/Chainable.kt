@@ -38,15 +38,3 @@ interface Chainable<T> {
         return if (e != null) function.apply(self, e) else self
     }
 }
-
-inline fun <T, E> T.useWithKt(e: E?, block: T.(E) -> Unit) = apply {
-    if (e != null) block(e)
-}
-
-inline fun <T> T.chainIfKt(condition: Boolean, block: T.() -> T): T {
-    return if (condition) block() else this
-}
-
-inline fun <T, E> T.chainWithKt(e: E?, block: T.(E) -> T): T {
-    return if (e != null) block(e) else this
-}

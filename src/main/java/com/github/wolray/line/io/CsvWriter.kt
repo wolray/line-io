@@ -6,7 +6,7 @@ import java.io.BufferedWriter
  * @author wolray
  */
 class CsvWriter<T> internal constructor(
-    private val joiner: ValuesJoiner<T>,
+    private val joiner: ValuesJoiner.Csv<T>,
     private val sep: String
 ) : LineWriter<T>(joiner.toFormatter(sep)) {
 
@@ -16,7 +16,7 @@ class CsvWriter<T> internal constructor(
         private var utf8 = false
 
         override fun markUtf8() = apply { utf8 = true }
-        override fun autoHeader() = apply { addHeader(joiner.join(sep)) }
+        override fun autoHeader() = apply { addHeader(joiner.joinFields(sep)) }
 
         override fun columnNames(vararg names: String) = apply {
             if (names.isNotEmpty()) {
