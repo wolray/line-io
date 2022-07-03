@@ -8,15 +8,15 @@ import java.util.*
  * @author wolray
  */
 abstract class ValuesJoiner<T, E, V>(val typeValues: TypeValues<T>) {
-    internal val attrs: Array<Attr<E>> = toAttrs()
+    val attrs: Array<Attr<E>> = toAttrs()
 
     init {
         TypeValues.processSimpleMethods(typeValues.type, ::processMethod)
     }
 
-    abstract fun toElement(o: Any?): E
+    open fun processMethod(simpleMethod: SimpleMethod) {}
 
-    abstract fun processMethod(simpleMethod: SimpleMethod)
+    abstract fun toElement(o: Any?): E
 
     class Attr<E>(val field: Field, var mapper: (Any?) -> E)
 
@@ -27,12 +27,24 @@ abstract class ValuesJoiner<T, E, V>(val typeValues: TypeValues<T>) {
             .toTypedArray()
     }
 
+    fun joinFields(sep: String): String = join(sep) { it.field.name }
+
+    fun join(sep: String, mapper: (Attr<E>) -> String): String {
+        val joiner = StringJoiner(sep)
+        for (a in attrs) {
+            joiner.add(mapper(a))
+        }
+        return joiner.toString()
+    }
+
     fun join(t: T, appender: Appender<E, V>): V {
         for (a in attrs) {
             appender.add(a.mapper(a.field[t]))
         }
         return appender.finalizer()
     }
+
+    fun toMapper(appender: () -> Appender<E, V>): (T) -> V = { join(it, appender()) }
 
     interface Appender<E, V> {
         fun add(e: E)
@@ -43,16 +55,6 @@ abstract class ValuesJoiner<T, E, V>(val typeValues: TypeValues<T>) {
         ValuesJoiner<T, String, String>(typeValues) {
 
         override fun toElement(o: Any?): String = o?.toString().orEmpty()
-
-        fun joinFields(sep: String): String = join(sep) { it.field.name }
-
-        fun join(sep: String, mapper: (Attr<String>) -> String): String {
-            val joiner = StringJoiner(sep)
-            for (a in attrs) {
-                joiner.add(mapper(a))
-            }
-            return joiner.toString()
-        }
 
         fun toFormatter(sep: String): (T) -> String = { join(sep) { a -> a.mapper(a.field[it]) } }
 
