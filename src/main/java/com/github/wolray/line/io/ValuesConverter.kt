@@ -35,7 +35,7 @@ abstract class ValuesConverter<V, T>(val typeValues: TypeValues<T>) : (V) -> T {
     }
 
     private fun fillAll(): (T, V) -> Unit {
-        val len = typeValues.values.size
+        val len = typeValues.size
         return { t, v ->
             val max = min(len, sizeOf(v))
             for (i in 0 until max) {
@@ -45,7 +45,7 @@ abstract class ValuesConverter<V, T>(val typeValues: TypeValues<T>) : (V) -> T {
     }
 
     private fun fillBySlots(slots: IntArray): (T, V) -> Unit {
-        val len = min(typeValues.values.size, slots.size)
+        val len = min(typeValues.size, slots.size)
         return { t, v ->
             val max = min(len, sizeOf(v))
             for (i in 0 until max) {
