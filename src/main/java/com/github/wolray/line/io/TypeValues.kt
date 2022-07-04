@@ -1,6 +1,6 @@
 package com.github.wolray.line.io
 
-import com.github.wolray.line.io.FieldSelector.Companion.of
+import com.github.wolray.line.io.MethodScope.annotation
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
@@ -10,7 +10,7 @@ import java.lang.reflect.Modifier
  */
 class TypeValues<T> @JvmOverloads constructor(
     val type: Class<T>,
-    selector: FieldSelector = of(type.getAnnotation(Fields::class.java))
+    selector: FieldSelector = FieldSelector.of(type.annotation())
 ) {
     val values: Array<Field>
     val size: Int

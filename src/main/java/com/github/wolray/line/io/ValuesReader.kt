@@ -1,5 +1,7 @@
 package com.github.wolray.line.io
 
+import com.github.wolray.line.io.EmptyScope.ifNotEmpty
+
 /**
  * @author wolray
  */
@@ -13,7 +15,7 @@ abstract class ValuesReader<S, V, T>(val converter: ValuesConverter<V, *, T>) :
 
     open inner class ValuesSession(source: S) : Session(source) {
 
-        override fun preprocess(iterator: Iterator<V>) = with(EmptyScope) {
+        override fun preprocess(iterator: Iterator<V>) {
             cols.ifNotEmpty { restSlots(iterator, this) }
             limit = limit.coerceAtLeast(converter.typeValues.size)
             slots.ifNotEmpty {

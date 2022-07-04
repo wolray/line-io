@@ -1,5 +1,6 @@
 package com.github.wolray.line.io
 
+import com.github.wolray.line.io.MethodScope.annotation
 import com.github.wolray.line.io.MethodScope.asMapper
 import com.github.wolray.line.io.TypeScope.isString
 import com.github.wolray.line.io.TypeValues.SimpleMethod
@@ -64,9 +65,8 @@ abstract class ValuesJoiner<T, E, V>(val typeValues: TypeValues<T>) {
             val method = simpleMethod.method
             val paraType = simpleMethod.paraType
             if (paraType.isString().not() && simpleMethod.returnType.isString()) {
-                method.isAccessible = true
                 val mapper = method.asMapper<Any?, String>("")
-                val test = FieldSelector.of(method.getAnnotation(Fields::class.java)).toTest()
+                val test = FieldSelector.of(method.annotation()).toTest()
                 attrs.asSequence()
                     .filter { test(it.field) && it.field.type == paraType }
                     .forEach { it.mapper = mapper }

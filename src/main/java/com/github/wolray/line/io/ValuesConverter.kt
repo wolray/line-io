@@ -1,5 +1,6 @@
 package com.github.wolray.line.io
 
+import com.github.wolray.line.io.MethodScope.annotation
 import com.github.wolray.line.io.MethodScope.asMapper
 import com.github.wolray.line.io.TypeScope.isBool
 import com.github.wolray.line.io.TypeScope.isNumber
@@ -123,9 +124,8 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
             val m = method.method
             val returnType = m.returnType
             if (method.paraType.isString()) {
-                val test = FieldSelector.of(m.getAnnotation(Fields::class.java)).toTest()
+                val test = FieldSelector.of(m.annotation()).toTest()
                 val seq = attrs.asSequence().filter { test(it.field) }
-                m.isAccessible = true
                 if (returnType.isString()) {
                     val mapper = m.asMapper<String, String>("")
                     seq.forEach {
@@ -141,9 +141,7 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
             }
         }
 
-        fun toParser(sep: String): (String) -> T {
-            return { this(it.split(sep)) }
-        }
+        fun toParser(sep: String): (String) -> T = { this(it.split(sep)) }
     }
 
     class Excel<T>(typeValues: TypeValues<T>) : ValuesConverter<Row, Cell, T>(typeValues) {
