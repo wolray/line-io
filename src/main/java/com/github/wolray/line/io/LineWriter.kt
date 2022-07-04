@@ -3,8 +3,6 @@ package com.github.wolray.line.io
 import com.alibaba.fastjson.JSON
 import java.io.BufferedWriter
 import java.io.FileWriter
-import java.io.IOException
-import java.io.UncheckedIOException
 import java.util.*
 import java.util.concurrent.CompletableFuture
 import java.util.function.Function
@@ -35,16 +33,12 @@ open class LineWriter<T>(private val formatter: Function<T, String>) {
         }
 
         fun with(iterable: Iterable<T>) {
-            try {
-                BufferedWriter(FileWriter(file, append)).use { bw ->
-                    if (!append) {
-                        preprocess(bw)
-                        headers.forEach { bw.writeLine(it) }
-                    }
-                    iterable.forEach { bw.writeLine(formatter.apply(it)) }
+            BufferedWriter(FileWriter(file, append)).use { bw ->
+                if (!append) {
+                    preprocess(bw)
+                    headers.forEach { bw.writeLine(it) }
                 }
-            } catch (e: IOException) {
-                throw UncheckedIOException(e)
+                iterable.forEach { bw.writeLine(formatter.apply(it)) }
             }
         }
     }

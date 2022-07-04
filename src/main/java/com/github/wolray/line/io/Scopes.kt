@@ -11,7 +11,7 @@ import java.util.function.Supplier
  * @author wolray
  */
 object MethodScope {
-    inline fun <reified T : Annotation> AnnotatedElement.annotation(): T =
+    inline fun <reified T : Annotation> AnnotatedElement.annotation(): T? =
         getAnnotation(T::class.java)
 
     fun <A, B> Method.asMapper(): (A) -> B? = {

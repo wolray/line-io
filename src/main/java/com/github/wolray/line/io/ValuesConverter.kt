@@ -26,7 +26,6 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
 
     abstract fun sizeOf(values: V): Int
     abstract fun getAt(values: V, slot: Int): E
-    abstract fun str(values: V): String
 
     abstract fun toStr(e: E): String
     abstract fun toBool(e: E): Boolean
@@ -96,14 +95,7 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
     }
 
     private fun fillAt(t: T, values: V, slot: Int, attr: Attr<E>) {
-        val f = attr.field
-        try {
-            f[t] = convertAt(values, slot, attr)
-        } catch (e: Throwable) {
-            val s = str(values)
-            val message = "[$s] at col $slot for field ${f.name}: ${f.type}"
-            throw IllegalArgumentException(message, e)
-        }
+        attr.field[t] = convertAt(values, slot, attr)
     }
 
     class Attr<E>(val field: Field, var mapper: (E) -> Any?)
@@ -112,7 +104,6 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
 
         override fun sizeOf(values: List<String>): Int = values.size
         override fun getAt(values: List<String>, slot: Int): String = values[slot]
-        override fun str(values: List<String>): String = values.toString()
 
         override fun toStr(e: String): String = e
         override fun toBool(e: String): Boolean = e.toBoolean()
@@ -148,7 +139,6 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
 
         override fun sizeOf(values: Row): Int = values.lastCellNum.toInt()
         override fun getAt(values: Row, slot: Int): Cell = values.getCell(slot)
-        override fun str(values: Row): String = values.joinToString { it.toString() }
 
         override fun toStr(e: Cell): String = e.stringCellValue
         override fun toBool(e: Cell): Boolean = e.booleanCellValue
