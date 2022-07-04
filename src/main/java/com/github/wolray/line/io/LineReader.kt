@@ -32,7 +32,10 @@ abstract class LineReader<S, V, T>(val function: Function<V, T>) : IReader<S, V,
         fun columns(vararg col: String) = apply { cols = arrayOf(*col) }
         fun columns(vararg index: Int) = apply { slots = index }
         fun columnsBefore(index: Int) = columnsRange(0, index)
-        fun columnsRange(start: Int, before: Int) = apply { slots = start.rangeUntil(before) }
+
+        fun columnsRange(start: Int, before: Int) = apply {
+            slots = (start until before).toList().toIntArray()
+        }
 
         fun excelColumns(excelCols: String) = apply {
             slots = if (excelCols.isEmpty()) intArrayOf() else {

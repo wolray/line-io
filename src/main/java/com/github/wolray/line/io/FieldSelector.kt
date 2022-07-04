@@ -1,5 +1,6 @@
 package com.github.wolray.line.io
 
+import com.github.wolray.line.io.EmptyScope.ifNotEmpty
 import java.lang.reflect.Field
 
 /**
@@ -12,7 +13,7 @@ class FieldSelector {
     var useRegex: String? = null
     var omitRegex: String? = null
 
-    fun toTest(): (Field) -> Boolean = with(NotEmpty) {
+    fun toTest(): (Field) -> Boolean {
         use.ifNotEmpty {
             val set = toSet()
             return { set.contains(it.name) }

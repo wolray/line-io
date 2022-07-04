@@ -3,7 +3,7 @@ package com.github.wolray.line.io
 /**
  * @author wolray
  */
-abstract class ValuesReader<S, V, T>(val converter: ValuesConverter<V, T>) :
+abstract class ValuesReader<S, V, T>(val converter: ValuesConverter<V, *, T>) :
     LineReader<S, V, T>(converter) {
     protected var limit = 0
 
@@ -13,7 +13,7 @@ abstract class ValuesReader<S, V, T>(val converter: ValuesConverter<V, T>) :
 
     open inner class ValuesSession(source: S) : Session(source) {
 
-        override fun preprocess(iterator: Iterator<V>) = with(NotEmpty) {
+        override fun preprocess(iterator: Iterator<V>) = with(EmptyScope) {
             cols.ifNotEmpty { restSlots(iterator, this) }
             limit = limit.coerceAtLeast(converter.typeValues.size)
             slots.ifNotEmpty {

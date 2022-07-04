@@ -36,18 +36,7 @@ class TypeValues<T> @JvmOverloads constructor(
     class SimpleMethod(val method: Method, val paraType: Class<*>, val returnType: Class<*>)
 
     companion object {
-        private const val staticFinalTransient = Modifier.STATIC or Modifier.FINAL or Modifier.TRANSIENT
-
-        @Suppress("UNCHECKED_CAST")
-        fun <T> call(method: Method, o: Any?): T? {
-            o ?: return null
-            return try {
-                val res = method.invoke(null, o) ?: return null
-                res as T
-            } catch (e: Throwable) {
-                null
-            }
-        }
+        const val staticFinalTransient = Modifier.STATIC or Modifier.FINAL or Modifier.TRANSIENT
 
         fun processSimpleMethods(type: Class<*>, consumer: (SimpleMethod) -> Unit) {
             for (m in type.declaredMethods) {

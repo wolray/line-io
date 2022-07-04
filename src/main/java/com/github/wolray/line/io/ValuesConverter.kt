@@ -1,5 +1,9 @@
 package com.github.wolray.line.io
 
+import com.github.wolray.line.io.MethodScope.asMapper
+import com.github.wolray.line.io.TypeScope.isBool
+import com.github.wolray.line.io.TypeScope.isNumber
+import com.github.wolray.line.io.TypeScope.isString
 import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.Row
 import java.lang.reflect.Constructor
@@ -9,7 +13,8 @@ import kotlin.math.min
 /**
  * @author wolray
  */
-abstract class ValuesConverter<V, T>(val typeValues: TypeValues<T>) : (V) -> T {
+abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> T {
+    val attrs: Array<Attr<E>> = toAttrs()
     private val constructor: Constructor<T> = typeValues.type.getConstructor()
     private var filler: (T, V) -> Unit
 
@@ -19,8 +24,43 @@ abstract class ValuesConverter<V, T>(val typeValues: TypeValues<T>) : (V) -> T {
     }
 
     abstract fun sizeOf(values: V): Int
+    abstract fun getAt(values: V, slot: Int): E
+    abstract fun str(values: V): String
 
-    abstract fun convertAt(values: V, slot: Int, index: Int): Any?
+    abstract fun toStr(e: E): String
+    abstract fun toBool(e: E): Boolean
+    abstract fun toInt(e: E): Int
+    abstract fun toDouble(e: E): Double
+    abstract fun toLong(e: E): Long
+
+    private fun toAttrs(): Array<Attr<E>> = typeValues.values.asSequence()
+        .map {
+            val t = it.type
+            val mapper = when {
+                t.isString() -> ::toStr
+                t.isBool() -> ::toBool
+                t.isNumber<Int>() -> ::toInt
+                t.isNumber<Double>() -> ::toDouble
+                t.isNumber<Long>() -> ::toLong
+                else -> {
+                    throw IllegalStateException(
+                        "cannot parse $t, please add a static method " +
+                            "(String -> ${t.simpleName}) inside ${typeValues.type}"
+                    )
+                }
+            }
+            Attr(it, mapper)
+        }
+        .toList()
+        .toTypedArray()
+
+    private fun convertAt(values: V, slot: Int, attr: Attr<E>): Any? {
+        return try {
+            attr.mapper(getAt(values, slot))
+        } catch (e: Throwable) {
+            null
+        }
+    }
 
     open fun processMethod(method: TypeValues.SimpleMethod) {}
 
@@ -39,7 +79,7 @@ abstract class ValuesConverter<V, T>(val typeValues: TypeValues<T>) : (V) -> T {
         return { t, v ->
             val max = min(len, sizeOf(v))
             for (i in 0 until max) {
-                fillAt(t, v, i, i)
+                fillAt(t, v, i, attrs[i])
             }
         }
     }
@@ -49,75 +89,29 @@ abstract class ValuesConverter<V, T>(val typeValues: TypeValues<T>) : (V) -> T {
         return { t, v ->
             val max = min(len, sizeOf(v))
             for (i in 0 until max) {
-                fillAt(t, v, slots[i], i)
+                fillAt(t, v, slots[i], attrs[i])
             }
         }
     }
 
-    private fun fillAt(t: T, values: V, slot: Int, index: Int) {
-        val f = typeValues.values[index]
+    private fun fillAt(t: T, values: V, slot: Int, attr: Attr<E>) {
+        val f = attr.field
         try {
-            val any = convertAt(values, slot, index)
-            f[t] = any
+            f[t] = convertAt(values, slot, attr)
         } catch (e: Throwable) {
-            val str = if (values is Array<*>) {
-                values.joinToString(DataMapper.DEFAULT_SEP)
-            } else {
-                values.toString()
-            }
-            val message = "[$str] at col $slot for field ${f.name}: ${f.type}"
+            val s = str(values)
+            val message = "[$s] at col $slot for field ${f.name}: ${f.type}"
             throw IllegalArgumentException(message, e)
         }
     }
 
     class Attr<E>(val field: Field, var mapper: (E) -> Any?)
 
-    abstract class Split<V, E, T>(typeValues: TypeValues<T>) : ValuesConverter<V, T>(typeValues) {
-        val attrs: Array<Attr<E>> = toAttrs()
-
-        abstract fun toStr(e: E): String
-        abstract fun toBool(e: E): Boolean
-        abstract fun toInt(e: E): Int
-        abstract fun toDouble(e: E): Double
-        abstract fun toLong(e: E): Long
-
-        abstract fun getAt(values: V, slot: Int): E
-
-        override fun convertAt(values: V, slot: Int, index: Int): Any? {
-            return try {
-                attrs[index].mapper(getAt(values, slot))
-            } catch (e: Throwable) {
-                null
-            }
-        }
-
-        private fun toAttrs(): Array<Attr<E>> {
-            return typeValues.values.asSequence()
-                .map {
-                    val mapper = when (val type = it.type) {
-                        String::class.java -> ::toStr
-                        Boolean::class.javaObjectType, Boolean::class.javaPrimitiveType -> ::toBool
-                        Int::class.javaObjectType, Int::class.javaPrimitiveType -> ::toInt
-                        Double::class.javaObjectType, Double::class.javaPrimitiveType -> ::toDouble
-                        Long::class.javaObjectType, Long::class.javaPrimitiveType -> ::toLong
-                        else -> {
-                            throw IllegalStateException(
-                                "cannot parse $type, " +
-                                    "please add a static method (String -> ${type.simpleName}) inside ${typeValues.type}"
-                            )
-                        }
-                    }
-                    Attr(it, mapper)
-                }
-                .toList()
-                .toTypedArray()
-        }
-    }
-
-    class Csv<T>(typeValues: TypeValues<T>) : Split<List<String>, String, T>(typeValues) {
+    class Csv<T>(typeValues: TypeValues<T>) : ValuesConverter<List<String>, String, T>(typeValues) {
 
         override fun sizeOf(values: List<String>): Int = values.size
         override fun getAt(values: List<String>, slot: Int): String = values[slot]
+        override fun str(values: List<String>): String = values.toString()
 
         override fun toStr(e: String): String = e
         override fun toBool(e: String): Boolean = e.toBoolean()
@@ -128,18 +122,18 @@ abstract class ValuesConverter<V, T>(val typeValues: TypeValues<T>) : (V) -> T {
         override fun processMethod(method: TypeValues.SimpleMethod) {
             val m = method.method
             val returnType = m.returnType
-            if (method.paraType == String::class.java) {
+            if (method.paraType.isString()) {
                 val test = FieldSelector.of(m.getAnnotation(Fields::class.java)).toTest()
                 val seq = attrs.asSequence().filter { test(it.field) }
                 m.isAccessible = true
-                if (returnType == String::class.java) {
-                    val mapper: (String) -> String? = { TypeValues.call(m, it) }
+                if (returnType.isString()) {
+                    val mapper = m.asMapper<String, String>("")
                     seq.forEach {
                         val old = it.mapper
-                        it.mapper = { s -> old(mapper(s)!!) }
+                        it.mapper = { s -> old(mapper(s)) }
                     }
                 } else {
-                    val mapper: (String) -> Any? = { TypeValues.call(m, it) }
+                    val mapper = m.asMapper<String, Any>()
                     seq
                         .filter { it.field.type == returnType }
                         .forEach { it.mapper = mapper }
@@ -152,10 +146,11 @@ abstract class ValuesConverter<V, T>(val typeValues: TypeValues<T>) : (V) -> T {
         }
     }
 
-    class Excel<T>(typeValues: TypeValues<T>) : Split<Row, Cell, T>(typeValues) {
+    class Excel<T>(typeValues: TypeValues<T>) : ValuesConverter<Row, Cell, T>(typeValues) {
 
         override fun sizeOf(values: Row): Int = values.lastCellNum.toInt()
         override fun getAt(values: Row, slot: Int): Cell = values.getCell(slot)
+        override fun str(values: Row): String = values.joinToString { it.toString() }
 
         override fun toStr(e: Cell): String = e.stringCellValue
         override fun toBool(e: Cell): Boolean = e.booleanCellValue

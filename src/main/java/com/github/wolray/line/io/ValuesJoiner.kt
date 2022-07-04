@@ -1,5 +1,7 @@
 package com.github.wolray.line.io
 
+import com.github.wolray.line.io.MethodScope.asMapper
+import com.github.wolray.line.io.TypeScope.isString
 import com.github.wolray.line.io.TypeValues.SimpleMethod
 import java.lang.reflect.Field
 import java.util.*
@@ -56,14 +58,14 @@ abstract class ValuesJoiner<T, E, V>(val typeValues: TypeValues<T>) {
 
         override fun toElement(o: Any?): String = o?.toString().orEmpty()
 
-        fun toFormatter(sep: String): (T) -> String = { join(sep) { a -> a.mapper(a.field[it]) } }
+        fun toFormatter(sep: String): (T) -> String = { t -> join(sep) { it.mapper(it.field[t]) } }
 
         override fun processMethod(simpleMethod: SimpleMethod) {
             val method = simpleMethod.method
             val paraType = simpleMethod.paraType
-            if (paraType != String::class.java && simpleMethod.returnType == String::class.java) {
+            if (paraType.isString().not() && simpleMethod.returnType.isString()) {
                 method.isAccessible = true
-                val mapper: (Any?) -> String = { TypeValues.call(method, it) ?: "" }
+                val mapper = method.asMapper<Any?, String>("")
                 val test = FieldSelector.of(method.getAnnotation(Fields::class.java)).toTest()
                 attrs.asSequence()
                     .filter { test(it.field) && it.field.type == paraType }
