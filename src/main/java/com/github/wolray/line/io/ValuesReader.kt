@@ -17,10 +17,10 @@ abstract class ValuesReader<S, V, T>(val converter: ValuesConverter<V, *, T>) :
 
         override fun preprocess(iterator: Iterator<V>) {
             cols.ifNotEmpty { restSlots(iterator, this) }
-            limit = limit.coerceAtLeast(converter.typeValues.size)
+            limit = limit.coerceAtLeast(converter.typeValues.size + 1)
             slots.ifNotEmpty {
                 converter.resetOrder(this)
-                limit = limit.coerceAtLeast(max() + 1)
+                limit = limit.coerceAtLeast(max() + 2)
             }
         }
 
