@@ -5,72 +5,41 @@ import com.github.wolray.line.io.MethodScope.asMapper
 import com.github.wolray.line.io.TypeScope.isString
 import com.github.wolray.line.io.TypeValues.SimpleMethod
 import java.lang.reflect.Field
-import java.util.*
+import java.util.function.Function
 
 /**
  * @author wolray
  */
-abstract class ValuesJoiner<T, E, V>(val typeValues: TypeValues<T>) {
-    val attrs: Array<Attr<E>> = toAttrs()
+class ValuesJoiner<T>(typeValues: TypeValues<T>) {
+    val attrs: List<Attr> = typeValues.map { Attr(it, mapper) }
 
     init {
         TypeValues.processSimpleMethods(typeValues.type, ::processMethod)
     }
 
-    open fun processMethod(simpleMethod: SimpleMethod) {}
-
-    abstract fun toElement(o: Any?): E
-
-    class Attr<E>(val field: Field, var mapper: (Any?) -> E)
-
-    private fun toAttrs(): Array<Attr<E>> {
-        return typeValues.values.asSequence()
-            .map { Attr(it, ::toElement) }
-            .toList()
-            .toTypedArray()
-    }
-
-    fun joinFields(sep: String): String = join(sep) { it.field.name }
-
-    fun join(sep: String, mapper: (Attr<E>) -> String): String {
-        val joiner = StringJoiner(sep)
-        for (a in attrs) {
-            joiner.add(mapper(a))
+    private fun processMethod(simpleMethod: SimpleMethod) {
+        val method = simpleMethod.method
+        val paraType = simpleMethod.paraType
+        if (paraType.isString().not() && simpleMethod.returnType.isString()) {
+            val mapper = method.asMapper<Any?, String>("")
+            val test = FieldSelector.of(method.annotation()).toTest()
+            attrs.asSequence()
+                .filter { test(it.field) && it.field.type == paraType }
+                .forEach { it.mapper = mapper }
         }
-        return joiner.toString()
     }
 
-    fun join(t: T, appender: Appender<E, V>): V {
-        for (a in attrs) {
-            appender.add(a.mapper(a.field[t]))
-        }
-        return appender.finalizer()
+    fun toFormatter(sep: String): Function<T, String> = Function { t ->
+        join(sep) { it.mapper(it.field[t]) }
     }
 
-    fun toMapper(appender: () -> Appender<E, V>): (T) -> V = { join(it, appender()) }
+    fun joinFields(sep: String) = join(sep) { it.field.name }
 
-    interface Appender<E, V> {
-        fun add(e: E)
-        fun finalizer(): V
-    }
+    fun join(sep: String, mapper: (Attr) -> String) = attrs.joinToString(sep) { mapper(it) }
 
-    class Csv<T>(typeValues: TypeValues<T>) :
-        ValuesJoiner<T, String, String>(typeValues) {
+    class Attr(val field: Field, var mapper: (Any?) -> String)
 
-        override fun toElement(o: Any?): String = o?.toString().orEmpty()
-
-        fun toFormatter(sep: String): (T) -> String = { t -> join(sep) { it.mapper(it.field[t]) } }
-
-        override fun processMethod(simpleMethod: SimpleMethod) {
-            val method = simpleMethod.method
-            val paraType = simpleMethod.paraType
-            if (paraType.isString().not() && simpleMethod.returnType.isString()) {
-                val mapper = method.asMapper<Any?, String>("")
-                val test = FieldSelector.of(method.annotation()).toTest()
-                attrs.asSequence()
-                    .filter { test(it.field) && it.field.type == paraType }
-                    .forEach { it.mapper = mapper }
-            }
-        }
+    companion object {
+        val mapper = { o: Any? -> o?.toString().orEmpty() }
     }
 }

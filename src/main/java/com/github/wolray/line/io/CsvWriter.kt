@@ -6,7 +6,7 @@ import java.io.BufferedWriter
  * @author wolray
  */
 class CsvWriter<T> internal constructor(
-    private val joiner: ValuesJoiner.Csv<T>,
+    private val joiner: ValuesJoiner<T>,
     private val sep: String
 ) : LineWriter<T>(joiner.toFormatter(sep)) {
 

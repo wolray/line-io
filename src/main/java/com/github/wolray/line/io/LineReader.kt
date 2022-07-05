@@ -1,6 +1,7 @@
 package com.github.wolray.line.io
 
 import com.alibaba.fastjson.JSON
+import com.github.wolray.line.io.TextScope.toSequence
 import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
 import java.io.InputStream

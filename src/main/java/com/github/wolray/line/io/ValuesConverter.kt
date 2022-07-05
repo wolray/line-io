@@ -9,13 +9,14 @@ import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.Row
 import java.lang.reflect.Constructor
 import java.lang.reflect.Field
+import java.util.function.Function
 import kotlin.math.min
 
 /**
  * @author wolray
  */
 abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> T {
-    val attrs: Array<Attr<E>> = toAttrs()
+    val attrs: Array<Attr<E>> = typeValues.map(::toAttr).toTypedArray()
     private val constructor: Constructor<T> = typeValues.type.getConstructor()
     private var filler: (T, V) -> Unit
 
@@ -33,26 +34,23 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
     abstract fun toDouble(e: E): Double
     abstract fun toLong(e: E): Long
 
-    private fun toAttrs(): Array<Attr<E>> = typeValues.values.asSequence()
-        .map {
-            val t = it.type
-            val mapper = when {
-                t.isString() -> ::toStr
-                t.isBool() -> ::toBool
-                t.isNumber<Int>() -> ::toInt
-                t.isNumber<Double>() -> ::toDouble
-                t.isNumber<Long>() -> ::toLong
-                else -> {
-                    throw IllegalStateException(
-                        "cannot parse $t, please add a static method " +
-                            "(String -> ${t.simpleName}) inside ${typeValues.type}"
-                    )
-                }
+    private fun toAttr(f: Field): Attr<E> {
+        val t = f.type
+        val mapper = when {
+            t.isString() -> ::toStr
+            t.isBool() -> ::toBool
+            t.isNumber<Int>() -> ::toInt
+            t.isNumber<Double>() -> ::toDouble
+            t.isNumber<Long>() -> ::toLong
+            else -> {
+                throw IllegalStateException(
+                    "cannot parse $t, please add a static method " +
+                        "(String -> ${t.simpleName}) inside ${typeValues.type}"
+                )
             }
-            Attr(it, mapper)
         }
-        .toList()
-        .toTypedArray()
+        return Attr(f, mapper)
+    }
 
     private fun convertAt(values: V, slot: Int, attr: Attr<E>): Any? {
         return try {
@@ -132,7 +130,7 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
             }
         }
 
-        fun toParser(sep: String): (String) -> T = { this(it.split(sep)) }
+        fun toParser(sep: String): Function<String, T> = Function { this(it.split(sep)) }
     }
 
     class Excel<T>(typeValues: TypeValues<T>) : ValuesConverter<Row, Cell, T>(typeValues) {

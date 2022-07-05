@@ -1,5 +1,7 @@
 package com.github.wolray.line.io
 
+import com.github.wolray.line.io.TextScope.toSequence
+
 /**
  * @author wolray
  */

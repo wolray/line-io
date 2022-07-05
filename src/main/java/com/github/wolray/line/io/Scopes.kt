@@ -37,7 +37,9 @@ object MethodScope {
 
 typealias Text = Supplier<InputStream>
 
-fun Text.toSequence() = BufferedReader(InputStreamReader(get())).lineSequence()
+object TextScope {
+    fun Text.toSequence() = BufferedReader(InputStreamReader(get())).lineSequence()
+}
 
 object EmptyScope {
     inline fun <T> T?.ifNotEmpty(block: T.() -> Unit) {

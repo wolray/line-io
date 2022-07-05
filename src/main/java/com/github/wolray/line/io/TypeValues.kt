@@ -11,32 +11,28 @@ import java.lang.reflect.Modifier
 class TypeValues<T> @JvmOverloads constructor(
     val type: Class<T>,
     selector: FieldSelector = FieldSelector.of(type.annotation())
-) {
-    val values: Array<Field>
-    val size: Int
+) : Iterable<Field> {
+    val values: List<Field> = getFields(type, selector)
+    val size: Int = values.size
 
-    init {
-        val seq = getFields(type, selector)
-            .filter { it.modifiers and staticFinalTransient == 0 }
-        val test = selector.toTest()
-        values = seq.filter(test).toList().toTypedArray()
-        size = values.size
-    }
-
-    private fun getFields(type: Class<T>, selector: FieldSelector): Sequence<Field> {
-        return if (selector.pojo) {
+    private fun getFields(type: Class<T>, selector: FieldSelector): List<Field> {
+        val seq = if (selector.pojo) {
             type.declaredFields.asSequence()
                 .filter { Modifier.isPrivate(it.modifiers) }
                 .onEach { it.isAccessible = true }
         } else {
             type.fields.asSequence()
         }
+        val test = selector.toTest()
+        return seq.filter { test(it) && it.modifiers and sft == 0 }.toList()
     }
+
+    override fun iterator(): Iterator<Field> = values.iterator()
 
     class SimpleMethod(val method: Method, val paraType: Class<*>, val returnType: Class<*>)
 
     companion object {
-        const val staticFinalTransient = Modifier.STATIC or Modifier.FINAL or Modifier.TRANSIENT
+        const val sft = Modifier.STATIC or Modifier.FINAL or Modifier.TRANSIENT
 
         fun processSimpleMethods(type: Class<*>, consumer: (SimpleMethod) -> Unit) {
             for (m in type.declaredMethods) {

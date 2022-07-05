@@ -49,7 +49,7 @@ open class LineWriter<T>(private val formatter: Function<T, String>) {
 
         @JvmStatic
         fun <T> byCsv(sep: String, type: Class<T>): CsvWriter<T> {
-            return CsvWriter(ValuesJoiner.Csv(TypeValues(type)), sep)
+            return CsvWriter(ValuesJoiner(TypeValues(type)), sep)
         }
 
         private fun BufferedWriter.writeLine(s: String) {
