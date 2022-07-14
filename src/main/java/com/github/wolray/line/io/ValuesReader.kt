@@ -16,21 +16,23 @@ abstract class ValuesReader<S, V, T>(val converter: ValuesConverter<V, *, T>) :
     open inner class ValuesSession(source: S) : Session(source) {
 
         override fun preprocess(iterator: Iterator<V>) {
-            cols.ifNotEmpty { restSlots(iterator, this) }
+            cols.ifNotEmpty {
+                val split = splitHeader(iterator)
+                slots = toSlots(split)
+            }
             limit = limit.coerceAtLeast(converter.typeValues.size + 1)
             slots.ifNotEmpty {
                 converter.resetOrder(this)
                 limit = limit.coerceAtLeast(max() + 2)
             }
         }
+    }
 
-        private fun restSlots(iterator: Iterator<V>, cols: Array<String>) {
-            val split = splitHeader(iterator)
-            slots = cols.map {
-                split.indexOf(it).apply {
-                    if (this < 0) throw NoSuchElementException("$it not in $split")
-                }
-            }.toIntArray()
-        }
+    companion object {
+        fun Array<String>.toSlots(split: List<String>): IntArray = map {
+            split.indexOf(it).apply {
+                if (this < 0) throw NoSuchElementException("$it not in $split")
+            }
+        }.toIntArray()
     }
 }
