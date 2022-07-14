@@ -1,6 +1,6 @@
 package com.github.wolray.line.io
 
-import com.github.wolray.line.io.MethodScope.annotation
+import com.github.wolray.line.io.DataMapper.Companion.toTest
 import java.lang.reflect.Field
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
@@ -9,21 +9,20 @@ import java.lang.reflect.Modifier
  * @author wolray
  */
 class TypeValues<T> @JvmOverloads constructor(
-    val type: Class<T>,
-    selector: FieldSelector = FieldSelector.of(type.annotation())
+    val type: Class<T>, fields: Fields? = null
 ) : Iterable<Field> {
-    val values: List<Field> = getFields(type, selector)
+    val values: List<Field> = getFields(type, fields)
     val size: Int = values.size
 
-    private fun getFields(type: Class<T>, selector: FieldSelector): List<Field> {
-        val seq = if (selector.pojo) {
+    private fun getFields(type: Class<T>, fields: Fields?): List<Field> {
+        val seq = if (fields?.pojo == true) {
             type.declaredFields.asSequence()
                 .filter { Modifier.isPrivate(it.modifiers) }
                 .onEach { it.isAccessible = true }
         } else {
             type.fields.asSequence()
         }
-        val test = selector.toTest()
+        val test = fields.toTest()
         return seq.filter { test(it) && it.modifiers and sft == 0 }.toList()
     }
 

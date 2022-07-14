@@ -1,5 +1,6 @@
 package com.github.wolray.line.io
 
+import com.github.wolray.line.io.DataMapper.Companion.toTest
 import com.github.wolray.line.io.MethodScope.annotation
 import com.github.wolray.line.io.MethodScope.asMapper
 import com.github.wolray.line.io.TypeScope.isString
@@ -22,7 +23,7 @@ class ValuesJoiner<T>(typeValues: TypeValues<T>) {
         val paraType = simpleMethod.paraType
         if (paraType.isString().not() && simpleMethod.returnType.isString()) {
             val mapper = method.asMapper<Any?, String>("")
-            val test = FieldSelector.of(method.annotation()).toTest()
+            val test = method.annotation<Fields>().toTest()
             attrs.asSequence()
                 .filter { test(it.field) && it.field.type == paraType }
                 .forEach { it.mapper = mapper }

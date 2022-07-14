@@ -1,5 +1,7 @@
 package com.github.wolray.line.io
 
+import com.github.wolray.line.io.EmptyScope.ifNotEmpty
+import java.lang.reflect.Field
 import java.util.function.Function
 
 /**
@@ -34,15 +36,24 @@ class DataMapper<T> @JvmOverloads constructor(
     fun format(t: T) = formatter.apply(t)
 
     class Builder<T> internal constructor(private val type: Class<T>) {
-        private val selector = FieldSelector()
+        var pojo: Boolean = false
+        var use: Array<String>? = null
+        var omit: Array<String>? = null
+        var useRegex: String? = null
+        var omitRegex: String? = null
 
-        fun pojo() = apply { selector.pojo = true }
-        fun use(vararg fields: String) = apply { selector.use = arrayOf(*fields) }
-        fun omit(vararg fields: String) = apply { selector.omit = arrayOf(*fields) }
-        fun useRegex(regex: String) = apply { selector.useRegex = regex }
-        fun omitRegex(regex: String) = apply { selector.omitRegex = regex }
-        fun build() = DataMapper(TypeValues(type, selector))
-        fun build(sep: String) = DataMapper(TypeValues(type, selector), sep)
+        private fun toFields() = Fields(
+            pojo = pojo, use = use ?: emptyArray(), omit = omit ?: emptyArray(),
+            useRegex = useRegex.orEmpty(), omitRegex = omitRegex.orEmpty()
+        )
+
+        fun pojo() = apply { pojo = true }
+        fun use(vararg fields: String) = apply { use = arrayOf(*fields) }
+        fun omit(vararg fields: String) = apply { omit = arrayOf(*fields) }
+        fun useRegex(regex: String) = apply { useRegex = regex }
+        fun omitRegex(regex: String) = apply { omitRegex = regex }
+        fun build() = DataMapper(TypeValues(type, toFields()))
+        fun build(sep: String) = DataMapper(TypeValues(type, toFields()), sep)
         fun toReader(sep: String) = build(sep).toReader()
         fun toWriter(sep: String) = build(sep).toWriter()
     }
@@ -56,5 +67,26 @@ class DataMapper<T> @JvmOverloads constructor(
 
         @JvmStatic
         fun <T> builder(type: Class<T>) = Builder(type)
+
+        internal fun Fields?.toTest(): (Field) -> Boolean {
+            this ?: return { true }
+            use.ifNotEmpty {
+                val set = toSet()
+                return { set.contains(it.name) }
+            }
+            omit.ifNotEmpty {
+                val set = toSet()
+                return { !set.contains(it.name) }
+            }
+            useRegex.ifNotEmpty {
+                val regex = toRegex()
+                return { it.name.matches(regex) }
+            }
+            omitRegex.ifNotEmpty {
+                val regex = toRegex()
+                return { !it.name.matches(regex) }
+            }
+            return { true }
+        }
     }
 }

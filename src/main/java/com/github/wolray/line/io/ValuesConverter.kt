@@ -1,5 +1,6 @@
 package com.github.wolray.line.io
 
+import com.github.wolray.line.io.DataMapper.Companion.toTest
 import com.github.wolray.line.io.MethodScope.annotation
 import com.github.wolray.line.io.MethodScope.asMapper
 import com.github.wolray.line.io.TypeScope.isBool
@@ -113,7 +114,7 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
             val m = method.method
             val returnType = m.returnType
             if (method.paraType.isString()) {
-                val test = FieldSelector.of(m.annotation()).toTest()
+                val test = m.annotation<Fields>().toTest()
                 val seq = attrs.asSequence().filter { test(it.field) }
                 if (returnType.isString()) {
                     val mapper = m.asMapper<String, String>("")
