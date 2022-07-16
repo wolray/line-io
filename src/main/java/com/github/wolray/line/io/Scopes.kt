@@ -59,11 +59,6 @@ object EmptyScope {
 }
 
 object TypeScope {
-    fun Class<*>.isString(): Boolean = this == String::class.java
-
-    fun Class<*>.isBool(): Boolean =
-        this == Boolean::class.javaObjectType || this == Boolean::class.javaPrimitiveType
-
-    inline fun <reified T : Number> Class<*>.isNumber(): Boolean =
-        this == T::class.javaObjectType || this == T::class.javaPrimitiveType
+    inline fun <reified T : Any> Class<*>.isType(checkPrimitive: Boolean = false): Boolean =
+        this == T::class.javaObjectType || checkPrimitive && this == T::class.javaPrimitiveType
 }

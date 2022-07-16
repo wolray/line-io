@@ -3,7 +3,7 @@ package com.github.wolray.line.io
 import com.github.wolray.line.io.DataMapper.Companion.toTest
 import com.github.wolray.line.io.MethodScope.annotation
 import com.github.wolray.line.io.MethodScope.asMapper
-import com.github.wolray.line.io.TypeScope.isString
+import com.github.wolray.line.io.TypeScope.isType
 import com.github.wolray.line.io.TypeValues.SimpleMethod
 import java.lang.reflect.Field
 import java.util.function.Function
@@ -21,7 +21,7 @@ class ValuesJoiner<T>(typeValues: TypeValues<T>) {
     private fun processMethod(simpleMethod: SimpleMethod) {
         val method = simpleMethod.method
         val paraType = simpleMethod.paraType
-        if (paraType.isString().not() && simpleMethod.returnType.isString()) {
+        if (paraType.isType<String>().not() && simpleMethod.returnType.isType<String>()) {
             val mapper = method.asMapper<Any?, String>("")
             val test = method.annotation<Fields>().toTest()
             attrs.asSequence()

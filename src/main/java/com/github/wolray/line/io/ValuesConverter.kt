@@ -3,9 +3,7 @@ package com.github.wolray.line.io
 import com.github.wolray.line.io.DataMapper.Companion.toTest
 import com.github.wolray.line.io.MethodScope.annotation
 import com.github.wolray.line.io.MethodScope.asMapper
-import com.github.wolray.line.io.TypeScope.isBool
-import com.github.wolray.line.io.TypeScope.isNumber
-import com.github.wolray.line.io.TypeScope.isString
+import com.github.wolray.line.io.TypeScope.isType
 import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.Row
 import java.lang.reflect.Constructor
@@ -38,11 +36,11 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
     private fun toAttr(f: Field): Attr<E> {
         val t = f.type
         val mapper = when {
-            t.isString() -> ::toStr
-            t.isBool() -> ::toBool
-            t.isNumber<Int>() -> ::toInt
-            t.isNumber<Double>() -> ::toDouble
-            t.isNumber<Long>() -> ::toLong
+            t.isType<String>() -> ::toStr
+            t.isType<Boolean>(true) -> ::toBool
+            t.isType<Int>(true) -> ::toInt
+            t.isType<Double>(true) -> ::toDouble
+            t.isType<Long>(true) -> ::toLong
             else -> {
                 throw IllegalStateException(
                     "cannot parse $t, please add a static method " +
@@ -113,10 +111,10 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
         override fun processMethod(method: TypeValues.SimpleMethod) {
             val m = method.method
             val returnType = m.returnType
-            if (method.paraType.isString()) {
+            if (method.paraType.isType<String>()) {
                 val test = m.annotation<Fields>().toTest()
                 val seq = attrs.asSequence().filter { test(it.field) }
-                if (returnType.isString()) {
+                if (returnType.isType<String>()) {
                     val mapper = m.asMapper<String, String>("")
                     seq.forEach {
                         val old = it.mapper
