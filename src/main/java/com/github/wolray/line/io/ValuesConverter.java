@@ -170,6 +170,7 @@ public class ValuesConverter<V, T> implements Function<V, T> {
     }
 
     public static class Text<T> extends ValuesConverter<String[], T> {
+
         public Text(TypeValues<T> typeValues) {
             super(typeValues, a -> a.length);
         }
@@ -180,7 +181,8 @@ public class ValuesConverter<V, T> implements Function<V, T> {
         }
 
         public Function<String, T> toParser(String sep) {
-            return compose(s -> s.split(sep));
+            int limit = typeValues.values.length + 1;
+            return compose(s -> s.split(sep, limit));
         }
     }
 
