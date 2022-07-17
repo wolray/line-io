@@ -68,7 +68,7 @@ class DataMapper<T> @JvmOverloads constructor(
         @JvmStatic
         fun <T> builder(type: Class<T>) = Builder(type)
 
-        internal fun Fields?.toTest(): (Field) -> Boolean {
+        fun Fields?.toTest(): (Field) -> Boolean {
             this ?: return { true }
             use.ifNotEmpty {
                 val set = toSet()

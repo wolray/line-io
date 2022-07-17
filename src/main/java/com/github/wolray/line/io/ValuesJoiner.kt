@@ -36,7 +36,7 @@ class ValuesJoiner<T>(typeValues: TypeValues<T>) {
 
     fun joinFields(sep: String) = join(sep) { it.field.name }
 
-    fun join(sep: String, mapper: (Attr) -> String) = attrs.joinToString(sep) { mapper(it) }
+    fun join(sep: String, mapper: (Attr) -> String) = attrs.joinToString(sep, transform = mapper)
 
     class Attr(val field: Field, var mapper: (Any?) -> String)
 

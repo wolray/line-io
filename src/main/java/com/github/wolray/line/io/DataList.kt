@@ -16,12 +16,11 @@ class DataList<T> : AbstractList<T>() {
     override var size = 0
 
     override fun add(element: T): Boolean {
-        Node<T>().also {
-            it.t = element
-            last.next = it
-            last = it
-            size++
-        }
+        val it = Node<T>()
+        it.t = element
+        last.next = it
+        last = it
+        size++
         return true
     }
 

@@ -3,6 +3,7 @@ package com.github.wolray.line.io
 import com.github.wolray.line.io.DataMapper.Companion.toTest
 import com.github.wolray.line.io.MethodScope.annotation
 import com.github.wolray.line.io.MethodScope.asMapper
+import com.github.wolray.line.io.MethodScope.catchAsNull
 import com.github.wolray.line.io.TypeScope.isType
 import org.apache.poi.ss.usermodel.Cell
 import org.apache.poi.ss.usermodel.Row
@@ -15,7 +16,7 @@ import kotlin.math.min
  * @author wolray
  */
 abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> T {
-    val attrs: Array<Attr<E>> = typeValues.map(::toAttr).toTypedArray()
+    val attrs: Array<Attr> = typeValues.map(::toAttr).toTypedArray()
     private val constructor: Constructor<T> = typeValues.type.getConstructor()
     private var filler: (T, V) -> Unit
 
@@ -33,7 +34,7 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
     abstract fun toDouble(e: E): Double
     abstract fun toLong(e: E): Long
 
-    private fun toAttr(f: Field): Attr<E> {
+    private fun toAttr(f: Field): Attr {
         val t = f.type
         val mapper = when {
             t.isType<String>() -> ::toStr
@@ -51,12 +52,8 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
         return Attr(f, mapper)
     }
 
-    private fun convertAt(values: V, slot: Int, attr: Attr<E>): Any? {
-        return try {
-            attr.mapper(getAt(values, slot))
-        } catch (e: Throwable) {
-            null
-        }
+    private fun convertAt(values: V, slot: Int, attr: Attr): Any? = catchAsNull {
+        attr.mapper(getAt(values, slot))
     }
 
     open fun processMethod(method: TypeValues.SimpleMethod) {}
@@ -91,11 +88,11 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
         }
     }
 
-    private fun fillAt(t: T, values: V, slot: Int, attr: Attr<E>) {
+    private fun fillAt(t: T, values: V, slot: Int, attr: Attr) {
         attr.field[t] = convertAt(values, slot, attr)
     }
 
-    class Attr<E>(val field: Field, var mapper: (E) -> Any?)
+    inner class Attr(val field: Field, var mapper: (E) -> Any?)
 
     class Csv<T>(typeValues: TypeValues<T>) : ValuesConverter<List<String>, String, T>(typeValues) {
 
@@ -129,7 +126,10 @@ abstract class ValuesConverter<V, E, T>(val typeValues: TypeValues<T>) : (V) -> 
             }
         }
 
-        fun toParser(sep: String): Function<String, T> = Function { this(it.split(sep)) }
+        fun toParser(sep: String): Function<String, T> {
+            val limit = typeValues.size + 1
+            return Function { this(it.split(sep, limit = limit)) }
+        }
     }
 
     class Excel<T>(typeValues: TypeValues<T>) : ValuesConverter<Row, Cell, T>(typeValues) {

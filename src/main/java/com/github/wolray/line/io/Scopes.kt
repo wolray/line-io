@@ -11,6 +11,12 @@ import java.util.function.Supplier
  * @author wolray
  */
 object MethodScope {
+    inline fun <T> catchAsNull(block: () -> T): T? = try {
+        block()
+    } catch (e: Throwable) {
+        null
+    }
+
     inline fun <reified T : Annotation> AnnotatedElement.annotation(): T? =
         getAnnotation(T::class.java)
 
@@ -27,11 +33,7 @@ object MethodScope {
     @Suppress("UNCHECKED_CAST")
     private fun <A, B> Method.call(a: A?): B? {
         a ?: return null
-        return try {
-            invoke(null, a) as? B
-        } catch (e: Throwable) {
-            null
-        }
+        return catchAsNull { invoke(null, a) as? B }
     }
 }
 

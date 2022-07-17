@@ -4,10 +4,8 @@ import com.alibaba.fastjson.JSON
 import com.github.wolray.line.io.TextScope.toSequence
 import org.apache.poi.ss.usermodel.Row
 import org.apache.poi.xssf.usermodel.XSSFWorkbook
-import java.io.InputStream
 import java.util.*
 import java.util.function.Function
-import java.util.function.Supplier
 import kotlin.streams.asStream
 
 /**
@@ -37,9 +35,8 @@ abstract class LineReader<S, V, T>(val function: Function<V, T>) : IReader<S, V,
         }
 
         fun excelColumns(excelCols: String) = apply {
-            slots = if (excelCols.isEmpty()) intArrayOf() else {
+            slots = if (excelCols.isEmpty()) intArrayOf() else
                 excelCols.split(",").map(::excelIndex).toIntArray()
-            }
         }
 
         private fun excelIndex(col: String): Int {
@@ -84,7 +81,7 @@ abstract class LineReader<S, V, T>(val function: Function<V, T>) : IReader<S, V,
         converter: ValuesConverter.Excel<T>
     ) : ValuesReader<Text, Row, T>(converter), IReader.Is<Row, T> {
 
-        override fun toIterator(source: Supplier<InputStream>): Iterator<Row> =
+        override fun toIterator(source: Text): Iterator<Row> =
             XSSFWorkbook(source.get()).getSheetAt(sheetIndex).iterator()
 
         override fun splitHeader(iterator: Iterator<Row>) = iterator.next().map { it.stringCellValue }
