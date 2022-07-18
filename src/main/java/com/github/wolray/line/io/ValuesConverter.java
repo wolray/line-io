@@ -181,8 +181,7 @@ public class ValuesConverter<V, T> implements Function<V, T> {
         }
 
         public Function<String, T> toParser(String sep) {
-            int limit = typeValues.values.length + 1;
-            return compose(s -> s.split(sep, limit));
+            return compose(s -> s.split(sep, 64));
         }
     }
 
